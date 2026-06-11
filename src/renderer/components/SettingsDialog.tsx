@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { RiCloseLine, RiFolderOpenLine } from '@remixicon/react';
+import { RiCloseLine, RiDownloadLine, RiFolderOpenLine } from '@remixicon/react';
 import { useConnection } from '../store/connection';
 import { useBackend } from '../store/backend';
 import { Button, IconButton, Pill, Spinner, StatusDot, Switch } from './ui';
@@ -60,6 +60,11 @@ export function SettingsDialog({
   const restartBackend = useBackend((s) => s.restart);
   const setBackground = useBackend((s) => s.setBackground);
   const revealData = useBackend((s) => s.revealData);
+  const updateInfo = useBackend((s) => s.updateInfo);
+  const checking = useBackend((s) => s.checking);
+  const updating = useBackend((s) => s.updating);
+  const checkUpdate = useBackend((s) => s.checkUpdate);
+  const applyUpdate = useBackend((s) => s.applyUpdate);
 
   const connConfig = useConnection((s) => s.config);
 
@@ -70,6 +75,7 @@ export function SettingsDialog({
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [applyMsg, setApplyMsg] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const logEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -111,6 +117,12 @@ export function SettingsDialog({
     });
     setTestResult(res.ok ? { ok: true, msg: 'Reachable' } : { ok: false, msg: res.error ?? 'Failed' });
     setTesting(false);
+  };
+
+  const onUpdateNow = async () => {
+    setApplyMsg(null);
+    const res = await applyUpdate();
+    setApplyMsg({ ok: res.ok, msg: res.message });
   };
 
   return (
@@ -216,6 +228,40 @@ export function SettingsDialog({
                         Reveal
                       </Button>
                     </Row>
+                    <div className="py-2.5">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="text-sm text-slate-200">Updates</div>
+                          <div className="mt-0.5 text-xs text-slate-500">
+                            {updateInfo ? updateInfo.message : 'Checking for updates…'}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {updateInfo?.available && (
+                            <Button
+                              variant="primary"
+                              onClick={() => void onUpdateNow()}
+                              disabled={updating}
+                            >
+                              <RiDownloadLine className="size-4" />
+                              {updating ? 'Updating…' : `Update to ${updateInfo.latest}`}
+                            </Button>
+                          )}
+                          <Button
+                            variant="subtle"
+                            onClick={() => void checkUpdate()}
+                            disabled={checking || updating}
+                          >
+                            {checking ? 'Checking…' : 'Check now'}
+                          </Button>
+                        </div>
+                      </div>
+                      {applyMsg && (
+                        <div className="mt-2">
+                          <Pill tone={applyMsg.ok ? 'green' : 'red'}>{applyMsg.msg}</Pill>
+                        </div>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <>

@@ -116,12 +116,29 @@ export async function registerIpc(): Promise<void> {
   });
 
   ipcMain.handle(IpcChannels.backendRevealData, () => shell.openPath(kasasDataDir()));
+
+  ipcMain.handle(IpcChannels.backendCheckUpdate, async () => {
+    const info = await manager.checkUpdate();
+    broadcast(IpcChannels.backendUpdateEvent, info);
+    return info;
+  });
+
+  ipcMain.handle(IpcChannels.backendApplyUpdate, async () => {
+    const result = await manager.applyUpdate();
+    broadcast(IpcChannels.backendStatusEvent, manager.status());
+    const info = manager.lastUpdateInfo();
+    if (info) broadcast(IpcChannels.backendUpdateEvent, info);
+    await syncConnection();
+    return result;
+  });
 }
 
 /** Start the managed backend (called on app ready). Returns quickly. */
 export async function startBackend(): Promise<void> {
   await manager.start();
   await syncConnection();
+  // The launch auto-check is renderer-driven (store.init → checkUpdate) so it
+  // can't race a broadcast fired before the renderer bound its listener.
 }
 
 /** Stop the managed child on quit. A background daemon is left running. */

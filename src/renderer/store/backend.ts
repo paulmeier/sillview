@@ -5,13 +5,22 @@
  */
 
 import { create } from 'zustand';
-import type { KasasLogLine, KasasSettings, KasasStatus } from '../../shared/ipc';
+import type {
+  KasasLogLine,
+  KasasSettings,
+  KasasStatus,
+  KasasUpdateInfo,
+  KasasUpdateResult,
+} from '../../shared/ipc';
 import { useConnection } from './connection';
 
 interface BackendStore {
   settings: KasasSettings | null;
   status: KasasStatus | null;
   logs: KasasLogLine[];
+  updateInfo: KasasUpdateInfo | null;
+  checking: boolean;
+  updating: boolean;
 
   init: () => Promise<void>;
   saveSettings: (settings: KasasSettings) => Promise<void>;
@@ -20,14 +29,19 @@ interface BackendStore {
   restart: () => Promise<void>;
   setBackground: (enabled: boolean) => Promise<void>;
   revealData: () => Promise<void>;
+  checkUpdate: () => Promise<void>;
+  applyUpdate: () => Promise<KasasUpdateResult>;
 }
 
 let listenersBound = false;
 
-export const useBackend = create<BackendStore>((set) => ({
+export const useBackend = create<BackendStore>((set, get) => ({
   settings: null,
   status: null,
   logs: [],
+  updateInfo: null,
+  checking: false,
+  updating: false,
 
   init: async () => {
     const [settings, status, logs] = await Promise.all([
@@ -48,6 +62,10 @@ export const useBackend = create<BackendStore>((set) => ({
       window.api.backend.onLog((line) => {
         set((st) => ({ logs: [...st.logs, line].slice(-500) }));
       });
+      window.api.backend.onUpdate((info) => set({ updateInfo: info }));
+      // Renderer-driven auto-check on launch (reliable — avoids racing a
+      // main-side broadcast fired before this listener was bound).
+      void get().checkUpdate();
     }
   },
 
@@ -76,5 +94,26 @@ export const useBackend = create<BackendStore>((set) => ({
 
   revealData: async () => {
     await window.api.backend.revealData();
+  },
+
+  checkUpdate: async () => {
+    set({ checking: true });
+    try {
+      const updateInfo = await window.api.backend.checkUpdate();
+      set({ updateInfo });
+    } finally {
+      set({ checking: false });
+    }
+  },
+
+  applyUpdate: async () => {
+    set({ updating: true });
+    try {
+      const result = await window.api.backend.applyUpdate();
+      await useConnection.getState().init();
+      return result;
+    } finally {
+      set({ updating: false });
+    }
   },
 }));

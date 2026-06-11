@@ -89,6 +89,29 @@ export interface KasasLogLine {
   line: string;
 }
 
+export type KasasUpdateKind = 'available' | 'uptodate' | 'devbuild' | 'error';
+
+export interface KasasUpdateInfo {
+  /** Version of the binary currently on disk, e.g. "v2.27.1". */
+  current: string;
+  /** Latest released version, when known. */
+  latest?: string;
+  available: boolean;
+  kind: KasasUpdateKind;
+  /** Human-readable summary for the UI. */
+  message: string;
+  /** Release URL, when the check provides one. */
+  url?: string;
+  checkedAt: number;
+}
+
+export interface KasasUpdateResult {
+  ok: boolean;
+  message: string;
+  /** The version installed, on success. */
+  version?: string;
+}
+
 /** IPC channel names. Kept in one place so main and preload cannot drift. */
 export const IpcChannels = {
   // renderer -> main (invoke/handle)
@@ -110,11 +133,14 @@ export const IpcChannels = {
   backendLogs: 'backend:logs',
   backendSetBackground: 'backend:setBackground',
   backendRevealData: 'backend:revealData',
+  backendCheckUpdate: 'backend:checkUpdate',
+  backendApplyUpdate: 'backend:applyUpdate',
   // main -> renderer (send/on)
   kasasEvent: 'kasas:event',
   eventStatus: 'events:status',
   backendStatusEvent: 'backend:statusEvent',
   backendLogEvent: 'backend:logEvent',
+  backendUpdateEvent: 'backend:updateEvent',
 } as const;
 
 /**
@@ -158,7 +184,12 @@ export interface SillviewApi {
     setBackground(enabled: boolean): Promise<KasasStatus>;
     /** Reveal the kasas data directory in Finder. */
     revealData(): Promise<void>;
+    /** Check GitHub for a newer kasas binary. */
+    checkUpdate(): Promise<KasasUpdateInfo>;
+    /** Download + apply the latest kasas binary, then restart it. */
+    applyUpdate(): Promise<KasasUpdateResult>;
     onStatus(cb: (status: KasasStatus) => void): () => void;
     onLog(cb: (line: KasasLogLine) => void): () => void;
+    onUpdate(cb: (info: KasasUpdateInfo) => void): () => void;
   };
 }
