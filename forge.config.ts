@@ -14,6 +14,12 @@ const config: ForgeConfig = {
     name: 'Sillview',
     appBundleId: 'so.kasas.sillview',
     appCategoryType: 'public.app-category.finance',
+    // Bundle the kasas backend binary alongside the app. It lands at
+    // `process.resourcesPath/bin/kasas` and is kept OUTSIDE the asar archive so
+    // it stays executable. Run `npm run sync:kasas` to produce it first.
+    // NOTE: for notarized distribution this binary must also be code-signed
+    // (osxSign with the right entitlements) — tracked as a follow-up.
+    extraResource: ['resources/bin'],
     // Code signing + notarization for release builds are intentionally left off.
     // Enable by supplying creds via env vars only (never inline):
     //   osxSign: {},

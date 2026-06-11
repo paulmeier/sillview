@@ -10,19 +10,26 @@ visualized with **Tremor**-style charts (Recharts), built with **Electron Forge
 
 ```bash
 npm install
-npm start          # build + launch the app (dev)
+npm run sync:kasas   # build the kasas binary and bundle it (needs ../kasas + Go 1.25)
+npm start            # build + launch the app (dev)
 ```
 
-By default the app talks to a kasas backend at `http://127.0.0.1:8080`. Start
-kasas first (see the kasas repo); the connection target and API token are
-editable in-app via the connection control at the bottom of the sidebar, or with
-env vars:
+sillview **bundles and manages kasas** for you. On first launch it copies the
+binary into its data dir, generates a `config.toml` (with a random dashboard
+token), starts kasas on `http://127.0.0.1:8080`, and connects automatically —
+there's no separate backend to run.
 
-```bash
-KASAS_BASE_URL=http://127.0.0.1:8080 KASAS_TOKEN=kasas_… npm start
-```
+Open **Settings** (gear at the bottom of the sidebar) to:
 
-In token-less dev kasas runs open, so no token is needed.
+- switch between the **Bundled** backend and an **External** kasas URL,
+- set the **poll interval** and other sync options,
+- toggle **Background mode** — a macOS LaunchAgent that keeps kasas running and
+  polling even when sillview is closed,
+- watch process **status** and live logs.
+
+Configure data sources (SimpleFIN, exchange addresses, etc.) for now via kasas's
+own web UI at `http://127.0.0.1:8080`; in-app source setup is a planned
+follow-up.
 
 ### Other scripts
 

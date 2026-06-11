@@ -11,6 +11,7 @@ import {
   RiSignalTowerLine,
 } from '@remixicon/react';
 import { useConnection } from './store/connection';
+import { useBackend } from './store/backend';
 import { useActiveDashboard, useDashboards } from './store/dashboards';
 import { DashboardGrid } from './dashboard/DashboardGrid';
 import { MarketplacePanel } from './marketplace/MarketplacePanel';
@@ -78,6 +79,7 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
+    void useBackend.getState().init();
     void useConnection.getState().init();
     const finish = () => useDashboards.getState().finishHydration();
     if (useDashboards.persist.hasHydrated()) finish();
