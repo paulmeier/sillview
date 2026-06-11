@@ -12,6 +12,8 @@ import type {
   KasasProcessState,
   KasasSettings,
   KasasStatus,
+  KasasUpdateInfo,
+  KasasUpdateResult,
 } from '../../shared/ipc';
 import {
   loadBackendState,
@@ -26,6 +28,7 @@ import {
   kasasDataDir,
 } from './paths';
 import { renderConfigToml } from './config-toml';
+import { applyUpdate as runApply, checkForUpdate as runCheck } from './updater';
 import * as launchAgent from './launchagent';
 
 interface Emitters {
@@ -49,6 +52,7 @@ export class KasasManager {
   private logs: KasasLogLine[] = [];
   private stopping = false;
   private restartAttempts = 0;
+  private lastUpdate: KasasUpdateInfo | null = null;
 
   constructor(private readonly emit: Emitters) {}
 
@@ -310,5 +314,45 @@ export class KasasManager {
   /** True when the managed instance owns the connection (bundled mode). */
   managesConnection(): boolean {
     return this.state.settings.mode === 'bundled';
+  }
+
+  // --- binary updates ---------------------------------------------------
+
+  lastUpdateInfo(): KasasUpdateInfo | null {
+    return this.lastUpdate;
+  }
+
+  async checkUpdate(): Promise<KasasUpdateInfo> {
+    const binary = await ensureBinary();
+    if (!binary) {
+      this.lastUpdate = {
+        current: 'unknown',
+        available: false,
+        kind: 'error',
+        message: 'kasas binary not bundled — run `npm run sync:kasas`',
+        checkedAt: Date.now(),
+      };
+      return this.lastUpdate;
+    }
+    this.lastUpdate = await runCheck(binary);
+    return this.lastUpdate;
+  }
+
+  /** Download + apply the latest binary, then restart so it execs. */
+  async applyUpdate(): Promise<KasasUpdateResult> {
+    const binary = await ensureBinary();
+    if (!binary) return { ok: false, message: 'kasas binary not bundled' };
+
+    const result = await runApply(binary);
+    if (result.ok) {
+      if (this.state.settings.background) {
+        await launchAgent.reload();
+        void this.waitForReady();
+      } else if (this.state.settings.mode === 'bundled') {
+        await this.restart();
+      }
+      this.lastUpdate = await runCheck(binary);
+    }
+    return result;
   }
 }

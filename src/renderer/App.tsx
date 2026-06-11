@@ -74,6 +74,7 @@ export function App() {
 
   const connStatus = useConnection((s) => s.status);
   const connConfig = useConnection((s) => s.config);
+  const updateAvailable = useBackend((s) => !!s.updateInfo?.available);
 
   const [marketOpen, setMarketOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -143,7 +144,12 @@ export function App() {
         >
           <StatusDot tone={statusTone} pulse={connStatus === 'online'} />
           <span className="min-w-0 flex-1 truncate">{hostOf(connConfig.baseUrl)}</span>
-          <RiSettings3Line className="size-4 shrink-0" />
+          <span className="relative shrink-0" title={updateAvailable ? 'kasas update available' : undefined}>
+            <RiSettings3Line className="size-4" />
+            {updateAvailable && (
+              <span className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-blue-400 ring-2 ring-surface" />
+            )}
+          </span>
         </button>
       </aside>
 

@@ -14,6 +14,8 @@ import type {
   KasasResult,
   KasasSettings,
   KasasStatus,
+  KasasUpdateInfo,
+  KasasUpdateResult,
   SillviewApi,
 } from './shared/ipc';
 import type { KasasEvent } from './shared/kasas-types';
@@ -62,6 +64,10 @@ const api: SillviewApi = {
     setBackground: (enabled: boolean) =>
       ipcRenderer.invoke(IpcChannels.backendSetBackground, enabled) as Promise<KasasStatus>,
     revealData: () => ipcRenderer.invoke(IpcChannels.backendRevealData) as Promise<void>,
+    checkUpdate: () =>
+      ipcRenderer.invoke(IpcChannels.backendCheckUpdate) as Promise<KasasUpdateInfo>,
+    applyUpdate: () =>
+      ipcRenderer.invoke(IpcChannels.backendApplyUpdate) as Promise<KasasUpdateResult>,
     onStatus: (cb: (status: KasasStatus) => void) => {
       const handler = (_: unknown, status: KasasStatus) => cb(status);
       ipcRenderer.on(IpcChannels.backendStatusEvent, handler);
@@ -71,6 +77,11 @@ const api: SillviewApi = {
       const handler = (_: unknown, line: KasasLogLine) => cb(line);
       ipcRenderer.on(IpcChannels.backendLogEvent, handler);
       return () => ipcRenderer.removeListener(IpcChannels.backendLogEvent, handler);
+    },
+    onUpdate: (cb: (info: KasasUpdateInfo) => void) => {
+      const handler = (_: unknown, info: KasasUpdateInfo) => cb(info);
+      ipcRenderer.on(IpcChannels.backendUpdateEvent, handler);
+      return () => ipcRenderer.removeListener(IpcChannels.backendUpdateEvent, handler);
     },
   },
 };
