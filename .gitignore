@@ -90,3 +90,6 @@ typings/
 
 # Electron-Forge
 out/
+
+# Bundled kasas binary — produced by `npm run sync:kasas`, too large for git
+resources/bin/

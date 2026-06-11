@@ -10,7 +10,9 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx ."
+    "lint": "eslint --ext .ts,.tsx .",
+    "sync:kasas": "node scripts/sync-kasas.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": {

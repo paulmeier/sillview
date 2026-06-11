@@ -1,7 +1,7 @@
 import { app, BrowserWindow, session, shell } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { registerIpc } from './main/ipc';
+import { registerIpc, startBackend, stopBackend } from './main/ipc';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -79,7 +79,20 @@ app.on('ready', async () => {
 
   await registerIpc();
   createWindow();
+  void startBackend(); // spawn/managed-or-daemon; returns quickly, status streams in
   console.log('[sillview] main process ready, window created');
+});
+
+// Gracefully stop the managed kasas child before quitting (a background daemon
+// is intentionally left running).
+let backendStopped = false;
+app.on('before-quit', (event) => {
+  if (backendStopped) return;
+  event.preventDefault();
+  void stopBackend().finally(() => {
+    backendStopped = true;
+    app.quit();
+  });
 });
 
 // On macOS, apps stay active until the user quits with Cmd+Q.

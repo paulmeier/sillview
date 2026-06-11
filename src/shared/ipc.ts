@@ -39,6 +39,56 @@ export interface EventStreamStatus {
   error?: string;
 }
 
+// --- Managed kasas backend ---------------------------------------------------
+
+export type KasasMode = 'bundled' | 'external';
+export type KasasLogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+export interface KasasSyncSettings {
+  enabled: boolean;
+  /** Poll interval as a Go duration string, e.g. "30m", "1h", "6h". */
+  interval: string;
+  runOnStart: boolean;
+  lookbackDays: number;
+}
+
+/** User-editable settings for the bundled/managed kasas backend. */
+export interface KasasSettings {
+  mode: KasasMode;
+  /** Loopback port the managed instance listens on. */
+  port: number;
+  logLevel: KasasLogLevel;
+  /** When true, kasas runs as a persistent LaunchAgent (survives app close). */
+  background: boolean;
+  sync: KasasSyncSettings;
+}
+
+export type KasasProcessState =
+  | 'stopped'
+  | 'starting'
+  | 'running'
+  | 'crashed'
+  | 'external' // user points at their own kasas
+  | 'daemon'; // running via LaunchAgent, not as our child
+
+export interface KasasStatus {
+  state: KasasProcessState;
+  mode: KasasMode;
+  background: boolean;
+  pid: number | null;
+  ready: boolean;
+  baseUrl: string;
+  dataDir: string;
+  binaryPresent: boolean;
+  error?: string;
+}
+
+export interface KasasLogLine {
+  at: number;
+  stream: 'stdout' | 'stderr';
+  line: string;
+}
+
 /** IPC channel names. Kept in one place so main and preload cannot drift. */
 export const IpcChannels = {
   // renderer -> main (invoke/handle)
@@ -50,9 +100,21 @@ export const IpcChannels = {
   eventsStop: 'events:stop',
   dashboardsLoad: 'dashboards:load',
   dashboardsSave: 'dashboards:save',
+  // managed backend (renderer -> main)
+  backendGetSettings: 'backend:getSettings',
+  backendSetSettings: 'backend:setSettings',
+  backendStart: 'backend:start',
+  backendStop: 'backend:stop',
+  backendRestart: 'backend:restart',
+  backendStatus: 'backend:status',
+  backendLogs: 'backend:logs',
+  backendSetBackground: 'backend:setBackground',
+  backendRevealData: 'backend:revealData',
   // main -> renderer (send/on)
   kasasEvent: 'kasas:event',
   eventStatus: 'events:status',
+  backendStatusEvent: 'backend:statusEvent',
+  backendLogEvent: 'backend:logEvent',
 } as const;
 
 /**
@@ -81,5 +143,22 @@ export interface SillviewApi {
     /** Returns the persisted JSON blob, or null on first run. */
     load(): Promise<string | null>;
     save(contents: string): Promise<void>;
+  };
+  backend: {
+    getSettings(): Promise<KasasSettings>;
+    /** Persist settings, re-render config.toml, and apply (restart/daemon). */
+    setSettings(settings: KasasSettings): Promise<KasasStatus>;
+    start(): Promise<KasasStatus>;
+    stop(): Promise<KasasStatus>;
+    restart(): Promise<KasasStatus>;
+    status(): Promise<KasasStatus>;
+    /** Recent buffered log lines from the managed process. */
+    logs(): Promise<KasasLogLine[]>;
+    /** Toggle the persistent LaunchAgent on/off. */
+    setBackground(enabled: boolean): Promise<KasasStatus>;
+    /** Reveal the kasas data directory in Finder. */
+    revealData(): Promise<void>;
+    onStatus(cb: (status: KasasStatus) => void): () => void;
+    onLog(cb: (line: KasasLogLine) => void): () => void;
   };
 }
