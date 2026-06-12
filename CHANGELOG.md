@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/paulmeier/sillview/compare/v0.2.0...v0.2.1) (2026-06-12)
+
+
+### Documentation
+
+* align README badges and logo with kasas ([#23](https://github.com/paulmeier/sillview/issues/23)) ([dbab552](https://github.com/paulmeier/sillview/commit/dbab552baf18a0a546cb2791610bb0ca5b5a1645))
+
 ## [0.2.0](https://github.com/paulmeier/sillview/compare/v0.1.4...v0.2.0) (2026-06-12)
 
 
