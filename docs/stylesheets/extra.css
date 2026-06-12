@@ -1,0 +1,82 @@
+/* Sillview brand palette — indigo window, violet accent (a dashboard glyph). */
+
+:root {
+  --sill-indigo: #4338ca;
+  --sill-indigo-light: #5b54e0;
+  --sill-indigo-dark: #312e9e;
+  --sill-violet: #7c6cf6;
+  --sill-violet-bright: #a78bfa;
+}
+
+/* Light scheme */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--sill-indigo);
+  --md-primary-fg-color--light: var(--sill-indigo-light);
+  --md-primary-fg-color--dark: var(--sill-indigo-dark);
+  --md-accent-fg-color: #5a4fd6;
+  --md-typeset-a-color: #4f46c9;
+}
+
+/* Dark scheme */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--sill-indigo);
+  --md-primary-fg-color--light: var(--sill-indigo-light);
+  --md-primary-fg-color--dark: var(--sill-indigo-dark);
+  --md-accent-fg-color: var(--sill-violet-bright);
+  --md-typeset-a-color: #b3a7fb;
+  /* a faint indigo cast on the dark background to match the brand */
+  --md-default-bg-color: hsl(244, 18%, 12%);
+}
+
+/* Header logo a touch larger and crisp. */
+.md-header__button.md-logo img {
+  height: 1.6rem;
+  width: 1.6rem;
+}
+
+/* Center Mermaid diagrams and give them breathing room. */
+.md-typeset .mermaid {
+  margin: 1.4em auto;
+  text-align: center;
+}
+
+/* Homepage hero. */
+.sill-hero {
+  text-align: center;
+  padding: 1.2rem 0 0.4rem;
+}
+.sill-hero img {
+  width: 120px;
+  height: 120px;
+}
+.sill-hero h1 {
+  margin: 0.4rem 0 0.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sill-hero .sill-tagline {
+  font-size: 1.15rem;
+  color: var(--md-default-fg-color--light);
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+/* Pill row used under the hero. */
+.sill-pills {
+  text-align: center;
+  margin: 0.6rem 0 0.2rem;
+}
+.sill-pills a {
+  display: inline-block;
+}
+
+/* Tighten grid cards and lift them on hover. */
+.md-typeset .grid.cards > ul > li {
+  border-radius: 0.6rem;
+  transition: border-color 120ms, box-shadow 120ms, transform 120ms;
+}
+.md-typeset .grid.cards > ul > li:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
