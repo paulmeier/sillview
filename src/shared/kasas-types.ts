@@ -217,6 +217,8 @@ export interface SourceDTO {
   multi_credential: boolean;
   /** Supports the browser OAuth connect flow. */
   oauth: boolean;
+  /** External hosts this source contacts (e.g. a market provider's API host). */
+  egress?: string[];
   credentials?: CredentialField[];
   credential_entries?: CredentialEntry[];
   /** False = registered but not built this run (its activating config is missing). */
@@ -576,4 +578,58 @@ export interface KasasUpdateStatus {
   release_url: string;
   checked_at: string;
   can_apply: boolean;
+}
+
+// --- Market / reference data (ADR 0006 / sillview ADR-0004) ------------------
+// kasas internal/api/market.go (MarketSeriesDTO, MarketPointDTO). Values are
+// decimal STRINGS (a price is money per unit). Daily-close granularity.
+
+export type MarketKind = 'equity' | 'fund' | 'index' | 'fx' | 'crypto';
+
+export interface MarketSeries {
+  id: string;
+  symbol: string;
+  kind: MarketKind | string;
+  currency: string;
+  adjusted: boolean;
+  name?: string;
+  provider: string;
+  /** Newest cached close date, or "" if never fetched. */
+  as_of?: string;
+  /** Cached point count. */
+  points: number;
+  /** Unix seconds of the last refresh. */
+  fetched_at?: number;
+  /** Cache is within the provider TTL. */
+  fresh: boolean;
+}
+
+export interface MarketPoint {
+  date: string;
+  value: string;
+}
+
+export interface MarketSeriesResponse {
+  enabled: boolean;
+  provider: string;
+  configured: boolean;
+  series: MarketSeries[];
+}
+
+export interface MarketPointsResponse {
+  enabled?: boolean;
+  provider: string;
+  as_of: string;
+  fresh: boolean;
+  points: MarketPoint[];
+}
+
+/** Body to define a series (admin). */
+export interface MarketSeriesInput {
+  id: string;
+  symbol: string;
+  kind: MarketKind;
+  currency: string;
+  adjusted?: boolean;
+  name?: string;
 }

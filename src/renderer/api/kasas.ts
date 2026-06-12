@@ -18,6 +18,10 @@ import type {
   EgressResponse,
   EventsResponse,
   KasasUpdateStatus,
+  MarketPointsResponse,
+  MarketSeries,
+  MarketSeriesInput,
+  MarketSeriesResponse,
   Organization,
   OrganizationsResponse,
   Plugin,
@@ -238,6 +242,31 @@ export const kasas = {
       path: '/api/v1/sync/history',
       query: { limit },
     }).then((r) => r.history ?? []) as Promise<SyncLog[]>,
+
+  // --- Market / reference data (ADR 0006) ---------------------------------
+
+  /** List configured market series with cache freshness. */
+  marketSeries: () =>
+    request<MarketSeriesResponse>({ method: 'GET', path: '/api/v1/market/series' }),
+
+  /** A series' daily closes (read-through cache), optionally windowed. */
+  marketPoints: (id: string, since?: string, until?: string) =>
+    request<MarketPointsResponse>({
+      method: 'GET',
+      path: `/api/v1/market/series/${encodeURIComponent(id)}/points`,
+      query: { since, until },
+    }),
+
+  /** Define a series (admin). */
+  addMarketSeries: (input: MarketSeriesInput) =>
+    request<MarketSeries>({ method: 'POST', path: '/api/v1/market/series', body: input }),
+
+  /** Remove a series and clear its cache (admin). */
+  removeMarketSeries: (id: string) =>
+    request<{ id: string; deleted: boolean }>({
+      method: 'DELETE',
+      path: `/api/v1/market/series/${encodeURIComponent(id)}`,
+    }),
 
   // --- Transaction detail: history / provenance / relationships -----------
 

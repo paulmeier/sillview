@@ -14,6 +14,16 @@ import { axisTick, colorAt, gridStroke } from './chartUtils';
 
 type Row = Record<string, string | number>;
 
+/**
+ * Build a valid SVG gradient id from a category name. Category labels can contain
+ * spaces, slashes, parens, etc. (e.g. "EUR/USD ($10k)"); those are invalid in an
+ * SVG id / url(#…) reference and silently break the gradient fill, so map any
+ * non-id character to '_'.
+ */
+function gradId(category: string): string {
+  return `grad-${category.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+}
+
 interface AreaChartProps {
   data: Row[];
   index: string;
@@ -41,7 +51,7 @@ export function AreaChart({
             {categories.map((cat, i) => {
               const color = colors?.[i] ?? colorAt(i);
               return (
-                <linearGradient key={cat} id={`grad-${cat}`} x1="0" y1="0" x2="0" y2="1">
+                <linearGradient key={cat} id={gradId(cat)} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={color} stopOpacity={0.35} />
                   <stop offset="100%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
@@ -78,7 +88,7 @@ export function AreaChart({
                 dataKey={cat}
                 stroke={color}
                 strokeWidth={2}
-                fill={`url(#grad-${cat})`}
+                fill={`url(#${gradId(cat)})`}
               />
             );
           })}

@@ -9,11 +9,12 @@ import { fromNow } from '../lib/time';
 import { KasasSettingsEditor } from './settings/KasasSettingsEditor';
 import { BootstrapConfig } from './settings/BootstrapConfig';
 import { Security } from './settings/Security';
+import { MarketProviders } from './settings/MarketProviders';
 import { ExternalUpdateStatus } from './settings/ExternalUpdateStatus';
 import type { KasasProcessState, KasasSettings } from '../../shared/ipc';
 
 type Tab = 'backend' | 'kasas' | 'background' | 'status';
-type KasasSubTab = 'settings' | 'security' | 'bootstrap';
+type KasasSubTab = 'settings' | 'market' | 'security' | 'bootstrap';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'backend', label: 'Backend' },
@@ -24,6 +25,7 @@ const TABS: { id: Tab; label: string }[] = [
 
 const KASAS_SUBTABS: { id: KasasSubTab; label: string }[] = [
   { id: 'settings', label: 'Settings' },
+  { id: 'market', label: 'Market' },
   { id: 'security', label: 'Security' },
   { id: 'bootstrap', label: 'Bootstrap' },
 ];
@@ -314,6 +316,8 @@ export function SettingsDialog({
                 </div>
                 {kasasTab === 'settings' ? (
                   <KasasSettingsEditor />
+                ) : kasasTab === 'market' ? (
+                  <MarketProviders />
                 ) : kasasTab === 'security' ? (
                   <Security />
                 ) : (

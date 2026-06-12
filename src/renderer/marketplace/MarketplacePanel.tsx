@@ -5,7 +5,7 @@ import type { WidgetCategory, WidgetDefinition } from '../widgets/types';
 import { useDashboards } from '../store/dashboards';
 import { Button, IconButton } from '../components/ui';
 
-const CATEGORY_ORDER: WidgetCategory[] = ['Overview', 'Accounts', 'Spending', 'Activity'];
+const CATEGORY_ORDER: WidgetCategory[] = ['Overview', 'Accounts', 'Spending', 'Activity', 'Market'];
 
 function groupByCategory(): Record<string, WidgetDefinition[]> {
   const groups: Record<string, WidgetDefinition[]> = {};

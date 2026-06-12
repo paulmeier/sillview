@@ -8,10 +8,12 @@ import {
   RiBankLine,
   RiBarChart2Line,
   RiExchangeFundsLine,
+  RiLineChartLine,
   RiListCheck,
   RiPieChart2Line,
   RiPulseLine,
   RiRefreshLine,
+  RiScales3Line,
   RiWallet3Line,
 } from '@remixicon/react';
 import type { WidgetDefinition } from './types';
@@ -23,6 +25,8 @@ import { SpendByLabelWidget } from './SpendByLabel';
 import { CashflowWidget } from './Cashflow';
 import { ActivityFeedWidget } from './ActivityFeed';
 import { SyncStatusWidget } from './SyncStatus';
+import { BenchmarkComparisonWidget } from './BenchmarkComparison';
+import { MarketSeriesChartWidget } from './MarketSeriesChart';
 
 export const WIDGETS: WidgetDefinition[] = [
   {
@@ -99,6 +103,24 @@ export const WIDGETS: WidgetDefinition[] = [
     icon: RiPulseLine,
     defaultSize: { w: 4, h: 6, minW: 3, minH: 3 },
     component: ActivityFeedWidget,
+  },
+  {
+    type: 'benchmark-comparison',
+    title: 'Benchmark Comparison',
+    description: 'A market series as "growth of $10k" alongside an account balance, for context.',
+    category: 'Market',
+    icon: RiScales3Line,
+    defaultSize: { w: 8, h: 5, minW: 4, minH: 4 },
+    component: BenchmarkComparisonWidget,
+  },
+  {
+    type: 'market-series',
+    title: 'Market Series',
+    description: 'A line chart of one configured market series (index, fund, FX, crypto).',
+    category: 'Market',
+    icon: RiLineChartLine,
+    defaultSize: { w: 6, h: 5, minW: 3, minH: 3 },
+    component: MarketSeriesChartWidget,
   },
 ];
 
