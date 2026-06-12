@@ -143,15 +143,19 @@ hurt the ledger DB (WAL churn, backup time).
 
 ## Decision outcome
 
-**Adopt Option C with storage C2.** kasas owns ingestion, storage, and serving of
-external market/reference data; Sillview owns visualization and comparison math.
+**Adopt Option C with storage C2.** kasas owns fetching, caching, and serving of
+external market/reference data — **on demand, through a server-side read-through
+cache with a TTL** (amended from this ADR's original scheduled-copy model: copies
+go stale and accrue backfill obligations; a demand-driven cache self-heals and
+burns quota only when someone is actually looking); Sillview owns visualization
+and comparison math.
 The "datashare marketplace" is **deferred and reframed** as sharing *connectors*,
 never data (see Devil's advocate and Follow-up ADRs).
 
 ```mermaid
 flowchart LR
-    P["market provider<br/>(user's own key)"] -->|"pull · gocron"| S["kasas market source<br/>(new archetype)"]
-    S --> M[("market_* tables<br/>rebuildable cache · no FKs")]
+    P["market provider<br/>(server-side key)"] -->|"fetch on demand · TTL"| S["kasas market source<br/>(read-through cache)"]
+    S --> M[("market_* tables<br/>TTL cache · no FKs")]
     L[("ledger tables")] -." same DB, separate namespace ".- M
     M --> API["GET /api/v1/market/…<br/>read tier"]
     API -->|existing CORS broker| W["Sillview comparison widgets<br/>normalize + chart"]
@@ -165,8 +169,9 @@ canonical example — it is exactly what this ADR routes through kasas instead.
 Because the decision spans two repos, it is recorded twice with a clear split of
 authority:
 [**kasas ADR 0006**](https://paulmeier.github.io/kasas/architecture/decisions/0006-external-market-reference-data/)
-is the **canonical record for the backend design** (source archetype, `market_*`
-schema, API routes, provider model); *this* ADR is canonical for the
+is the **canonical record for the backend design** (the fetch/caching model,
+source archetype, `market_*` schema, API routes, provider model); *this* ADR is
+canonical for the
 Sillview-side consequences — broker-only consumption, the kind (b) narrowing,
 widgets, and mock coverage. The backend sketches below are context, not the
 contract; if they drift, kasas ADR 0006 wins.
@@ -200,26 +205,28 @@ Daily closes only. Intraday is an explicit **non-goal**: it multiplies quota cos
 storage, and provider complexity for a personal-finance dashboard that compares
 months, not minutes.
 
-### kasas: the market source
+### kasas: the market source (read-through cache)
 
-- A new archetype (e.g. `ArchetypeReference`) beside `pull`/`enrichment`, with a
-  `SeriesPuller` interface — the existing `Puller` returns `ImportBatch`
-  (accounts + transactions), which a market source has no business producing.
-- One provider behind a small provider interface so the first provider
-  (ADR-0005 decides which) isn't load-bearing. API keys go through the existing
-  runtime credential machinery, never `config.toml`.
-- Config sketch:
+The fetch model is **on demand**, not a scheduled copy — recorded canonically in
+kasas ADR 0006; the shape in brief:
 
-  ```toml
-  [sources.market]
-  provider = "stooq"        # first provider TBD — ADR-0005
-  interval = "24h"
-  series   = ["^spx", "vtsax"]
-  ```
-
-- The poller schedules it like any source; runs land in `sync_log`; completion emits
-  an event (so plugins/webhooks can react to fresh prices); the generic
-  `POST /api/v1/sources/{type}/sync` gives on-demand refresh for free.
+- The **API read path is the trigger**: fresh cache → serve; stale → serve
+  immediately and refresh in the background (*stale-while-revalidate*), then emit
+  a `market.updated` event that the widgets' existing event subscription picks
+  up; cold → one synchronous fetch under a timeout.
+- **Single-flight and per-provider rate limiting live at the server** —
+  concurrent requests for the same series collapse to one provider call, and
+  quotas are enforced where they are actually shared.
+- `fetched_at` in the schema above is load-bearing: freshness is a read-time TTL
+  policy (a daily series is stale once a newer close should exist). Refreshes
+  upsert the viewed window, which also self-heals retroactive restatements of
+  adjusted series — something the scheduled-copy model would have needed
+  detection logic for.
+- Still a registered source (new `reference` archetype): it inherits source
+  config, runtime credentials (never `config.toml`), readiness reporting, and
+  the generic `POST /api/v1/sources/{type}/sync` — which now means *warm the
+  cache*, an optional convenience rather than the primary path. The provider
+  sits behind a small interface so the first pick (ADR-0005) isn't load-bearing.
 
 ### kasas: API (read tier)
 
@@ -237,6 +244,16 @@ Both readable with the dashboard token, like other read-tier routes.
   surface, no renderer egress.**
 - Chart copy must be honest: label the series as *price* vs *total-return*, and the
   account line as *balance* (which includes deposits) — see Devil's advocate.
+- **Settings are the config surface; the engine stays remote-safe.** Provider
+  toggles and API-key entry live in the existing Settings dialog and flow through
+  kasas's **admin-tier** source-credential routes — the same path bank credentials
+  use. This works identically for the bundled backend and a **remote kasas**: keys
+  and cache live with the server, every connected dashboard shares one cache and
+  one provider quota, and a connection holding only a read-only API key sees
+  provider settings as read-only (it can chart series, not reconfigure them).
+- **Capability-gate the widget (ADR-0002).** A remote kasas may predate
+  `/api/v1/market/*`; the widget declares the requirement and degrades to the
+  actionable "requires kasas ≥ vX" tile, never a broken chart.
 - **ADR-0001 synergy:** the market endpoints join the fixed kasas endpoint
   enumeration, so Tier-1 query-builder specs gain benchmarks with zero changes to
   the spec security model.
@@ -312,16 +329,23 @@ The case against — recorded so we walk in clear-eyed.
 - The first user-visible comparison is honest-but-modest (overlay, not attribution)
   until ADR-0006/0007 land — expectation management in the widget copy is part of
   the deliverable.
+- **Cold-cache latency:** the first view of a never-fetched series blocks on a
+  server-side provider round-trip; subsequent reads are cache-instant
+  (stale-while-revalidate). Widgets must treat it as ordinary loading, not error.
 - Mock mode grows synthetic-series maintenance.
 
 ## Implementation plan
 
-- [ ] **Phase 1 (kasas):** `market_*` migrations + store methods; `SeriesPuller`
-      interface + market source behind a provider interface; poller + `sync_log` +
-      event integration; `GET /api/v1/market/*` read routes; `kasas market reset`.
+- [ ] **Phase 1 (kasas):** `market_*` cache migrations + store methods;
+      demand-driven read-through fetch (TTL, single-flight, stale-while-revalidate
+      + `market.updated` event) behind a provider interface; optional cache-warm
+      via the generic per-source sync; `GET /api/v1/market/*` read routes;
+      `kasas market reset`.
 - [ ] **Phase 2 (Sillview):** Benchmark-comparison widget through the existing
-      broker; honest labeling (price vs total-return, "balance ≠ return");
-      `KASAS_MOCK` routes for `/api/v1/market/*`.
+      broker; provider settings UI (admin-tier; read-only for API-key
+      connections); ADR-0002 capability gating for backends without
+      `/api/v1/market/*`; honest labeling (price vs total-return,
+      "balance ≠ return"); `KASAS_MOCK` routes for `/api/v1/market/*`.
 - [ ] **Phase 3:** add the market endpoints to ADR-0001's Tier-1 fixed endpoint
       enumeration so query-builder specs can chart benchmarks.
 - [ ] **Phase 4+:** governed by the follow-up ADRs below — notably balance
@@ -333,7 +357,11 @@ Each is a separable decision deliberately *not* made here:
 
 - **ADR-0005 · Market-data provider selection, credentials & licensing** — which
   provider(s) ship first (keyless default vs bring-your-own-key), quota/backoff
-  policy, ToS review per provider, symbol-mapping strategy across providers.
+  policy, ToS review per provider, symbol-mapping strategy across providers. A
+  candidate matrix (Alpha Vantage, Finnhub, Market Data, Alpaca, MarketStack,
+  plus Tiingo/Stooq/FRED) and two constraining findings — the S&P 500 index
+  level is licensed IP free tiers often won't serve (ETF or FRED proxy), and
+  mutual-fund NAV coverage varies sharply — are recorded in kasas ADR 0006.
 - **ADR-0006 · Account balance history (snapshots)** — record per-account balance
   at each sync into a history table; the prerequisite for any honest performance
   chart. Possibly extends to a holdings/positions/units model for brokerage
