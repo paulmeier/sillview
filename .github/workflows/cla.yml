@@ -27,7 +27,9 @@ jobs:
         with:
           path-to-signatures: "signatures/cla.json"
           path-to-document: "https://github.com/paulmeier/sillview/blob/main/CLA.md"
-          branch: "main"
+          # Signatures are committed here; this branch must NOT be protected
+          # (main is). The bot can't write to a protected default branch.
+          branch: "cla-signatures"
           allowlist: paulmeier,*[bot] # maintainer + bots (e.g. release-please) exempt
 
           # Customize the bot message
