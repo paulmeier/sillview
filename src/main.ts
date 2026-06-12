@@ -2,6 +2,7 @@ import { app, BrowserWindow, session, shell } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpc, startBackend, stopBackend } from './main/ipc';
+import { MOCK } from './main/kasas/mock';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -79,7 +80,12 @@ app.on('ready', async () => {
 
   await registerIpc();
   createWindow();
-  void startBackend(); // spawn/managed-or-daemon; returns quickly, status streams in
+  // KASAS_MOCK serves fixtures from the main process; don't spawn the real binary.
+  if (MOCK) {
+    console.log('[sillview] KASAS_MOCK is set — serving fixtures, kasas backend not started');
+  } else {
+    void startBackend(); // spawn/managed-or-daemon; returns quickly, status streams in
+  }
   console.log('[sillview] main process ready, window created');
 });
 

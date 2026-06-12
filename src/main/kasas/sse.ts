@@ -10,8 +10,10 @@
 import type { ConnectionConfig, EventStreamStatus } from '../../shared/ipc';
 import { IpcChannels } from '../../shared/ipc';
 import type { KasasEvent } from '../../shared/kasas-types';
+import { MOCK, syntheticEvent } from './mock';
 
 const RECONNECT_MS = 3000;
+const MOCK_EVENT_MS = 12_000;
 
 type Broadcast = (channel: string, payload: unknown) => void;
 
@@ -19,6 +21,7 @@ export class EventStream {
   private controller: AbortController | null = null;
   private stopped = true;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private mockTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     private readonly getConn: () => ConnectionConfig,
@@ -28,6 +31,16 @@ export class EventStream {
   start(): void {
     if (!this.stopped) return;
     this.stopped = false;
+    // In mock mode there is no kasas to stream from — report "connected" and
+    // emit a synthetic change event on a timer so the live widgets aren't idle.
+    if (MOCK) {
+      this.emitStatus({ connected: true });
+      this.mockTimer = setInterval(
+        () => this.broadcast(IpcChannels.kasasEvent, syntheticEvent()),
+        MOCK_EVENT_MS,
+      );
+      return;
+    }
     void this.connect();
   }
 
@@ -36,6 +49,10 @@ export class EventStream {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
+    }
+    if (this.mockTimer) {
+      clearInterval(this.mockTimer);
+      this.mockTimer = null;
     }
     this.controller?.abort();
     this.controller = null;

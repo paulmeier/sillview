@@ -12,6 +12,7 @@ import { BrowserWindow, ipcMain, shell } from 'electron';
 import type { ConnectionConfig, KasasRequest, KasasSettings } from '../shared/ipc';
 import { IpcChannels } from '../shared/ipc';
 import { kasasRequest } from './kasas/http';
+import { MOCK, mockKasasRequest } from './kasas/mock';
 import { EventStream } from './kasas/sse';
 import { loadConnection, saveConnection } from './storage/settings';
 import { loadDashboards, saveDashboards } from './storage/dashboards';
@@ -56,7 +57,7 @@ export async function registerIpc(): Promise<void> {
 
   // --- kasas REST broker + connection -----------------------------------
   ipcMain.handle(IpcChannels.kasasRequest, (_e, req: KasasRequest) =>
-    kasasRequest(connection, req),
+    MOCK ? mockKasasRequest(req) : kasasRequest(connection, req),
   );
 
   ipcMain.handle(IpcChannels.getConnection, () => connection);
@@ -70,7 +71,9 @@ export async function registerIpc(): Promise<void> {
   });
 
   ipcMain.handle(IpcChannels.testConnection, (_e, candidate?: ConnectionConfig) =>
-    kasasRequest(candidate ?? connection, { method: 'GET', path: '/api/v1/auth' }),
+    MOCK
+      ? mockKasasRequest({ method: 'GET', path: '/api/v1/auth' })
+      : kasasRequest(candidate ?? connection, { method: 'GET', path: '/api/v1/auth' }),
   );
 
   // --- live event stream -------------------------------------------------
