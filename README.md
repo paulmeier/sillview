@@ -116,3 +116,8 @@ both the marketplace UI and the dashboard engine read.
   Tremor Raw files.
 - `vite.renderer.config.mts` is `.mts` on purpose: Forge loads Vite configs in
   CommonJS, but `@tailwindcss/vite` and `@vitejs/plugin-react` are ESM-only.
+
+## Contributing
+
+Run `make` (or `make help`) for one-word commands to install, run, test, build,
+and release. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full local workflow.
