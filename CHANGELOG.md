@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/paulmeier/sillview/compare/v0.1.4...v0.2.0) (2026-06-12)
+
+
+### Features
+
+* reach feature parity with the kasas web dashboard ([#20](https://github.com/paulmeier/sillview/issues/20)) ([6d9060c](https://github.com/paulmeier/sillview/commit/6d9060c90dfc3002f206a841d9c88953aee4cc09))
+
 ## [0.1.4](https://github.com/paulmeier/sillview/compare/v0.1.3...v0.1.4) (2026-06-12)
 
 
