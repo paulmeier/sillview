@@ -66,8 +66,22 @@ jobs:
           asset="kasas_${version}_darwin_${arch}.tar.gz"
           echo "Downloading ${asset} from paulmeier/kasas…"
           tmp="$(mktemp -d)"
-          gh release download "$version" --repo paulmeier/kasas \
-            --pattern "$asset" --pattern "${asset}.sha256" --dir "$tmp"
+          # A release is tagged before its assets finish uploading, so a fresh
+          # kasas release can briefly exist with no downloadable binary
+          # ("no assets to download"). Retry to ride out that upload lag instead
+          # of failing the whole release build.
+          for attempt in 1 2 3 4 5 6; do
+            if gh release download "$version" --repo paulmeier/kasas \
+              --pattern "$asset" --pattern "${asset}.sha256" --dir "$tmp" --clobber; then
+              break
+            fi
+            if [ "$attempt" -eq 6 ]; then
+              echo "kasas ${version} assets still unavailable after ${attempt} attempts" >&2
+              exit 1
+            fi
+            echo "kasas ${version} assets not ready (attempt ${attempt}); retrying in 30s…" >&2
+            sleep 30
+          done
           ( cd "$tmp" && shasum -a 256 -c "${asset}.sha256" )
           tar -C "$tmp" -xzf "$tmp/$asset"
           mkdir -p resources/bin
