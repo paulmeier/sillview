@@ -6,7 +6,10 @@
 - **Related:** [ADR-0001](0001-user-created-widgets-tiered-model.md) ·
   [ADR-0002](0002-backend-capability-detection-and-plugin-activation.md) ·
   [kasas Integration → The CORS broker](../kasas-integration.md#the-cors-broker) ·
-  [Widget Catalog](../../features/widgets.md)
+  [Widget Catalog](../../features/widgets.md) ·
+  [kasas ADR 0006](https://paulmeier.github.io/kasas/architecture/decisions/0006-external-market-reference-data/)
+  (the backend half of this decision, in kasas's own ADR log — each repo numbers
+  its own; lands with kasas PR #125)
 
 ## Context and problem statement
 
@@ -158,6 +161,15 @@ This **narrows ADR-0002's kind (b)**: market/reference data used for analysis mu
 come through kasas. Kind (b) main-side adapters remain for capabilities that
 genuinely cannot live in the backend, but "an FX rate, a quote" is no longer the
 canonical example — it is exactly what this ADR routes through kasas instead.
+
+Because the decision spans two repos, it is recorded twice with a clear split of
+authority:
+[**kasas ADR 0006**](https://paulmeier.github.io/kasas/architecture/decisions/0006-external-market-reference-data/)
+is the **canonical record for the backend design** (source archetype, `market_*`
+schema, API routes, provider model); *this* ADR is canonical for the
+Sillview-side consequences — broker-only consumption, the kind (b) narrowing,
+widgets, and mock coverage. The backend sketches below are context, not the
+contract; if they drift, kasas ADR 0006 wins.
 
 ## Detailed design
 
@@ -354,6 +366,8 @@ Each is a separable decision deliberately *not* made here:
 
 ## References
 
+- [kasas ADR 0006 — External market & reference data as a first-class source](https://paulmeier.github.io/kasas/architecture/decisions/0006-external-market-reference-data/)
+  — the canonical backend record of this decision.
 - kasas ingestion: `internal/source/source.go`, `internal/poller/poller.go`
   (source archetypes, pull/cursor model, sync scheduling).
 - kasas schema: `migrations/sqlite/00001_init.sql` (accounts hold one latest
