@@ -14,7 +14,7 @@ export function PageShell({
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <header className="app-drag flex items-center gap-3 border-b border-line px-5 py-3">
         <div className="min-w-0">
           <h1 className="truncate text-sm font-semibold text-slate-100">{title}</h1>
