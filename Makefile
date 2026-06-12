@@ -120,15 +120,13 @@ dist: node_modules $(KASAS_BIN) ## Build distributables — .dmg + .zip into out
 build: dist ## Alias for `dist` (the downloadable app)
 
 # --------------------------------------------------------------------------- #
-# Release — tag main; CI builds the .dmg/.zip and attaches them to the release  #
+# Release                                                                       #
+#                                                                               #
+# Releases are automated by release-please from Conventional Commit history: it #
+# keeps a "release" PR open that bumps the version + CHANGELOG; merging it tags  #
+# the release, and CI builds + attaches the .dmg/.zip. There is no manual        #
+# release target — just land Conventional Commits on main. See CONTRIBUTING.md.  #
 # --------------------------------------------------------------------------- #
-
-.PHONY: release
-release: ## Publish a GitHub release (usage: make release VERSION=vX.Y.Z)
-	@test -n "$(VERSION)" || { echo "Usage: make release VERSION=vX.Y.Z"; exit 1; }
-	@echo "▸ Creating release $(VERSION) on main…"
-	gh release create "$(VERSION)" --target main --title "$(VERSION)" --generate-notes
-	@echo "✔ $(VERSION) created — the Build workflow will attach the .dmg/.zip."
 
 # --------------------------------------------------------------------------- #
 # Clean                                                                        #
