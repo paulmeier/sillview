@@ -130,7 +130,7 @@ release (or any specific version), add a `Release-As: 1.0.0` footer to a commit.
 
 ## Continuous integration
 
-Four workflows live in [`.github/workflows/`](.github/workflows):
+Five workflows live in [`.github/workflows/`](.github/workflows):
 
 - **`ci.yml`** — ESLint + typecheck on every push/PR.
 - **`codeql.yml`** — CodeQL security scan on push/PR and weekly.
@@ -139,3 +139,18 @@ Four workflows live in [`.github/workflows/`](.github/workflows):
 - **`build.yml`** — reusable workflow: builds the macOS `.dmg`/`.zip` and
   attaches them to the Release. Also runnable manually (artifact-only) via
   workflow dispatch.
+- **`docs.yml`** — builds the MkDocs Material site and deploys it to the `docs`
+  branch (served by GitHub Pages) when `docs/**` or `mkdocs.yml` change.
+
+## Documentation
+
+The docs site ([paulmeier.github.io/sillview](https://paulmeier.github.io/sillview/))
+is **MkDocs Material**; source lives in `docs/` and `mkdocs.yml`. Preview locally:
+
+```bash
+pip install "mkdocs-material==9.7.6"
+mkdocs serve        # http://127.0.0.1:8000
+```
+
+`docs.yml` builds `--strict` (broken links/nav fail the build) and publishes to
+the `docs` branch on every change to `docs/**` or `mkdocs.yml`.

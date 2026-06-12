@@ -93,3 +93,7 @@ out/
 
 # Bundled kasas binary — produced by `npm run sync:kasas`, too large for git
 resources/bin/
+
+# MkDocs build output (the rendered site is published by CI to the `docs` branch;
+# source lives in /docs and mkdocs.yml)
+/site/

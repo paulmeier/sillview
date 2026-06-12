@@ -6,6 +6,8 @@ draggable grid, and save them locally. Styled with **Tailwind CSS v4**,
 visualized with **Tremor**-style charts (Recharts), built with **Electron Forge
 + Vite + React 19 + TypeScript**.
 
+📖 **Documentation:** [paulmeier.github.io/sillview](https://paulmeier.github.io/sillview/)
+
 ## Quick start
 
 ```bash

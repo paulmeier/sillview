@@ -1,0 +1,121 @@
+site_name: Sillview
+site_description: >-
+  Sillview is a macOS desktop dashboard for the kasas financial ledger. Build
+  dashboards from a marketplace of widgets and arrange them on a draggable grid,
+  over a kasas backend that Sillview bundles, manages, and keeps up to date for
+  you.
+site_url: https://paulmeier.github.io/sillview/
+site_author: Paul Meier
+
+repo_name: paulmeier/sillview
+repo_url: https://github.com/paulmeier/sillview
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; Paul Meier — released under the MIT License
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/paulmeier/sillview
+      name: Sillview on GitHub
+    - icon: material/download
+      link: https://github.com/paulmeier/sillview/releases
+      name: Download Sillview
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      title: On this page
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quick Start: getting-started/quick-start.md
+      - Settings & Backend: getting-started/settings.md
+      - Offline Mock Mode: getting-started/mock-mode.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Managed kasas Backend: architecture/managed-backend.md
+      - kasas Integration: architecture/kasas-integration.md
+  - Features:
+      - Dashboards & Widgets: features/dashboards.md
+      - Widget Catalog: features/widgets.md
+      - Background Mode: features/background-mode.md
+      - Backend Updates: features/updates.md
+  - Development:
+      - Workflow: development/workflow.md
+      - Building a Widget: development/building-a-widget.md
+      - Releases & CI: development/releases.md
