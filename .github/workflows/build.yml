@@ -1,0 +1,91 @@
+name: Build
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      kasas_version:
+        description: "kasas release tag to bundle (or 'latest')"
+        required: false
+        default: "latest"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build macOS app
+    # Apple-Silicon runner: produces an arm64 .dmg / .zip. The bundled kasas
+    # binary is matched to the runner arch. (Universal/amd64 build is a follow-up.)
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch bundled kasas binary
+        # sillview bundles the kasas backend (forge `extraResource: resources/bin`).
+        # Instead of building the sibling Go repo, pull the matching prebuilt
+        # binary from the public kasas GitHub Release and verify its checksum.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KASAS_VERSION: ${{ inputs.kasas_version }}
+        run: |
+          set -euo pipefail
+          version="${KASAS_VERSION:-latest}"
+          case "$(uname -m)" in
+            arm64) arch=arm64 ;;
+            x86_64) arch=amd64 ;;
+            *) echo "Unsupported arch: $(uname -m)" >&2; exit 1 ;;
+          esac
+          if [ "$version" = "latest" ]; then
+            version="$(gh release view --repo paulmeier/kasas --json tagName -q .tagName)"
+          fi
+          asset="kasas_${version}_darwin_${arch}.tar.gz"
+          echo "Downloading ${asset} from paulmeier/kasas…"
+          tmp="$(mktemp -d)"
+          gh release download "$version" --repo paulmeier/kasas \
+            --pattern "$asset" --pattern "${asset}.sha256" --dir "$tmp"
+          ( cd "$tmp" && shasum -a 256 -c "${asset}.sha256" )
+          tar -C "$tmp" -xzf "$tmp/$asset"
+          mkdir -p resources/bin
+          cp "$tmp/kasas_${version}_darwin_${arch}/kasas" resources/bin/kasas
+          chmod +x resources/bin/kasas
+          echo "Bundled kasas ${version} (${arch})"
+
+      - name: Build distributables
+        # forge `make` on macOS runs only the darwin makers (DMG + ZIP); the
+        # Windows/Linux makers are skipped on this host. The build is unsigned —
+        # code signing + notarization are intentionally off (env-var opt-in).
+        run: npm run make
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sillview-macos-arm64
+          path: |
+            out/make/**/*.dmg
+            out/make/**/*.zip
+          if-no-files-found: error
+
+      - name: Publish to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Create the release if it doesn't exist yet, then (re)upload the
+          # distributables. `--clobber` makes re-runs idempotent.
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
+          mapfile -t assets < <(find out/make -type f \( -name '*.dmg' -o -name '*.zip' \))
+          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
