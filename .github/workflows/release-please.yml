@@ -1,0 +1,42 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # Maintains a release PR (CHANGELOG + version bump in package.json) from
+      # Conventional Commits; merging it creates the tag + GitHub Release.
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          # A PAT (vs the default GITHUB_TOKEN) makes the release PR trigger CI,
+          # so its checks run. Falls back to GITHUB_TOKEN if the secret is unset.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # Merging the release PR creates the tag + Release; this builds the macOS
+  # distributables and attaches them. Running in the same workflow (rather than
+  # off the tag push) means it fires reliably with the default GITHUB_TOKEN.
+  build:
+    name: Build distributables
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    permissions:
+      contents: write
+    secrets: inherit
+    uses: ./.github/workflows/build.yml
+    with:
+      release_tag: ${{ needs.release-please.outputs.tag_name }}

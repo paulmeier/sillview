@@ -1,14 +1,27 @@
 name: Build
 
 on:
-  push:
-    tags: ["v*"]
+  # Called by release-please.yml after it cuts a release: builds the
+  # distributables and attaches them to the freshly-created GitHub Release.
+  workflow_call:
+    inputs:
+      release_tag:
+        description: "Release tag to build for and attach artifacts to"
+        required: true
+        type: string
+      kasas_version:
+        description: "kasas release tag to bundle (or 'latest')"
+        required: false
+        default: "latest"
+        type: string
+  # Manual artifact-only build (no release publish) for spot-checking.
   workflow_dispatch:
     inputs:
       kasas_version:
         description: "kasas release tag to bundle (or 'latest')"
         required: false
         default: "latest"
+        type: string
 
 permissions:
   contents: read
@@ -78,18 +91,22 @@ jobs:
           if-no-files-found: error
 
       - name: Publish to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+        # Only on the release path (workflow_call passes a tag); a manual
+        # workflow_dispatch run just uploads the artifact above.
+        if: ${{ inputs.release_tag != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
-          # Create the release if it doesn't exist yet, then (re)upload the
-          # distributables. `--clobber` makes re-runs idempotent.
-          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
-            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
+          # release-please already created the Release; fall back to creating it
+          # if missing, then (re)upload the distributables. `--clobber` makes
+          # re-runs idempotent.
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
+            || gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes --verify-tag
           # macOS runners ship bash 3.2, which has no `mapfile`; collect the
           # distributables with a portable read loop instead.
           assets=()
           while IFS= read -r f; do assets+=("$f"); done \
             < <(find out/make -type f \( -name '*.dmg' -o -name '*.zip' \))
-          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber

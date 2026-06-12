@@ -119,5 +119,8 @@ both the marketplace UI and the dashboard engine read.
 
 ## Contributing
 
-Run `make` (or `make help`) for one-word commands to install, run, test, build,
-and release. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full local workflow.
+Run `make` (or `make help`) for one-word commands to install, run, test, and
+build. Commits follow [Conventional Commits](https://www.conventionalcommits.org/),
+and versioning + releases are automated by
+[release-please](https://github.com/googleapis/release-please). See
+[CONTRIBUTING.md](CONTRIBUTING.md) for the full local workflow.

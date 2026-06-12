@@ -9,8 +9,8 @@ commands; run `make` (or `make help`) any time to see the full list.
 - **macOS** — Sillview is macOS-first and the makers produce macOS artifacts.
 - **Node.js 22+** — CI runs on Node 22 (developed on 24). npm ships with it; the
   lockfile (`package-lock.json`) is committed.
-- **[GitHub CLI](https://cli.github.com) (`gh`)** — used by `make kasas`
-  (downloads the backend binary) and `make release`.
+- **[GitHub CLI](https://cli.github.com) (`gh`)** — used by `make kasas` to
+  download the backend binary.
 - **Optional: Go 1.25 + a checkout of [`../kasas`](../kasas)** — only if you want
   to build the kasas backend from source (`make sync-kasas`) instead of
   downloading a prebuilt binary.
@@ -46,7 +46,6 @@ make dev       # launches the app; it spawns + manages kasas and auto-connects
 | `make review` | Run `test`, then summarize the diff vs `origin/main` |
 | `make package` | Build the unpackaged `.app` into `out/` |
 | `make dist` / `make build` | Build the `.dmg` + `.zip` into `out/make/` |
-| `make release VERSION=vX.Y.Z` | Tag `main` + publish a GitHub release |
 | `make clean` / `make clean-all` | Remove build output (and deps/binary) |
 
 `make` auto-installs dependencies when they're missing or stale, so you can jump
@@ -87,26 +86,56 @@ Claude Code (or the cloud `ultrareview`).
 ## Pull requests
 
 - Branch off `main`, push, and open a PR against `main`.
+- **Write the PR title as a [Conventional Commit](#commit-messages--releases)**
+  (e.g. `feat: add net-worth widget`). PRs are squash-merged, so the title
+  becomes the commit subject that drives the changelog and the next version.
 - CI runs **Lint & typecheck** and a **CodeQL** scan on every PR — both must be
   green before merge.
 - Keep changes focused; match the surrounding code's style and the conventions
   documented in the [README](README.md) (e.g. the renderer never touches the
   network directly, and money is always a decimal **string**, never a number).
 
+## Commit messages & releases
+
+This repo uses **[Conventional Commits](https://www.conventionalcommits.org/)**.
+Versioning (`package.json`) and `CHANGELOG.md` are automated by
+[release-please](https://github.com/googleapis/release-please): it keeps a
+"release" PR open that bumps the version and changelog from your commit history;
+merging that PR tags the release, and CI builds the `.dmg`/`.zip` and attaches
+them to the GitHub Release.
+
+Use these prefixes (the PR **title** is what counts when squash-merging):
+
+| Prefix | Effect | Example |
+| --- | --- | --- |
+| `feat:` | minor bump, "Features" | `feat: add net-worth widget` |
+| `fix:` | patch bump, "Bug Fixes" | `fix: stop drag handle eating clicks` |
+| `perf:` / `refactor:` / `docs:` | changelog entry | `docs: document mock mode` |
+| `test:` / `ci:` / `chore:` | no release | `chore: bump deps` |
+| `feat!:` / `fix!:` (or `BREAKING CHANGE:` footer) | breaking change | `feat!: drop intel build` |
+
+Pre-1.0, breaking changes bump the **minor** version. To cut the first 1.0.0
+release (or any specific version), add a `Release-As: 1.0.0` footer to a commit.
+
 ## Building & releasing
 
 - **Local build:** `make build` produces `out/make/*.dmg` and `*.zip`. Builds are
   **arm64-only and unsigned** — on first launch, right-click the app → **Open**.
   `make package` produces a quick unpackaged `.app` for spot-checking.
-- **Release:** `make release VERSION=v0.2.0` tags `main` and creates the GitHub
-  release. The **Build** workflow then builds the `.dmg`/`.zip` and attaches them
-  to the release automatically. (Versions are plain `vMAJOR.MINOR.PATCH` tags.)
+- **Release:** releases are automated — see
+  [Commit messages & releases](#commit-messages--releases). Land Conventional
+  Commits on `main`, then merge the release PR release-please opens; it tags the
+  release (plain `vMAJOR.MINOR.PATCH`) and CI attaches the `.dmg`/`.zip`. There
+  is no manual tag step.
 
 ## Continuous integration
 
-Three workflows live in [`.github/workflows/`](.github/workflows):
+Four workflows live in [`.github/workflows/`](.github/workflows):
 
 - **`ci.yml`** — ESLint + typecheck on every push/PR.
 - **`codeql.yml`** — CodeQL security scan on push/PR and weekly.
-- **`build.yml`** — macOS `.dmg`/`.zip` build on `v*` tags and manual dispatch,
-  publishing to the matching GitHub Release.
+- **`release-please.yml`** — on push to `main`, maintains the release PR and (on
+  merge) creates the tag + GitHub Release, then invokes `build.yml`.
+- **`build.yml`** — reusable workflow: builds the macOS `.dmg`/`.zip` and
+  attaches them to the Release. Also runnable manually (artifact-only) via
+  workflow dispatch.
