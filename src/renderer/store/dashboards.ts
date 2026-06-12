@@ -54,6 +54,7 @@ interface DashboardsState {
   toggleEditing: () => void;
   addWidget: (type: string, size: WidgetSize) => void;
   removeWidget: (instanceId: string) => void;
+  updateWidgetConfig: (instanceId: string, config: Record<string, unknown>) => void;
   setLayout: (layout: GridItem[]) => void;
   finishHydration: () => void;
 }
@@ -174,6 +175,14 @@ export const useDashboards = create<DashboardsState>()(
             ...d,
             widgets: d.widgets.filter((w) => w.id !== instanceId),
             layout: d.layout.filter((l) => l.i !== instanceId),
+          })),
+
+        updateWidgetConfig: (instanceId, config) =>
+          updateActive((d) => ({
+            ...d,
+            widgets: d.widgets.map((w) =>
+              w.id === instanceId ? { ...w, config: { ...w.config, ...config } } : w,
+            ),
           })),
 
         setLayout: (layout) => updateActive((d) => ({ ...d, layout })),

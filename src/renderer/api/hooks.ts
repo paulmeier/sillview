@@ -56,6 +56,19 @@ function useKeys(live: boolean): unknown[] {
   return live ? [version, eventNonce] : [version];
 }
 
+/**
+ * Refetch keys that re-run only when one of the named event families ticks
+ * (plus on reconnect). Use this for pages that should refresh on, say,
+ * `rule.*` or `plugin.*` events but not on every change event.
+ */
+export function useFamilyKeys(families: string[]): unknown[] {
+  const version = useConnection((s) => s.version);
+  const famSum = useConnection((s) =>
+    families.reduce((sum, f) => sum + (s.familyNonces[f] ?? 0), 0),
+  );
+  return [version, famSum];
+}
+
 export function useOrganizations() {
   const keys = useKeys(false);
   return useAsync(() => kasas.organizations(), keys);

@@ -120,6 +120,19 @@ export async function registerIpc(): Promise<void> {
 
   ipcMain.handle(IpcChannels.backendRevealData, () => shell.openPath(kasasDataDir()));
 
+  // --- open an external URL (OAuth consent, etc.) ------------------------
+  // Restricted to http(s) so the renderer can't drive shell into arbitrary
+  // schemes (file:, etc.). The narrowest hole in the broker boundary.
+  ipcMain.handle(IpcChannels.systemOpenExternal, async (_e, url: string) => {
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return;
+      await shell.openExternal(parsed.toString());
+    } catch {
+      /* ignore malformed URLs */
+    }
+  });
+
   ipcMain.handle(IpcChannels.backendCheckUpdate, async () => {
     const info = await manager.checkUpdate();
     broadcast(IpcChannels.backendUpdateEvent, info);

@@ -1,6 +1,13 @@
 /**
  * Renders the kasas config.toml from the app's managed settings. Regenerated
  * whenever settings change — hand edits to this file are overwritten.
+ *
+ * Config ownership is SPLIT: this file owns the boot-only / file-managed keys
+ * (server, database, secrets, dashboard token, and the update safety pins).
+ * The sync/log/plugins/events/etc. blocks emitted here are only first-boot
+ * SEED defaults — at runtime they are edited via the kasas API (Settings →
+ * Kasas), whose stored overrides win over this file. So changing them in the
+ * app no longer rewrites this file.
  */
 
 import type { KasasSettings } from '../../shared/ipc';

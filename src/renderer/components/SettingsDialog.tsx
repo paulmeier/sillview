@@ -6,19 +6,27 @@ import { useBackend } from '../store/backend';
 import { Button, IconButton, Pill, Spinner, StatusDot, Switch } from './ui';
 import { cx } from '../lib/utils';
 import { fromNow } from '../lib/time';
-import type { KasasLogLevel, KasasProcessState, KasasSettings } from '../../shared/ipc';
+import { KasasSettingsEditor } from './settings/KasasSettingsEditor';
+import { BootstrapConfig } from './settings/BootstrapConfig';
+import { Security } from './settings/Security';
+import { ExternalUpdateStatus } from './settings/ExternalUpdateStatus';
+import type { KasasProcessState, KasasSettings } from '../../shared/ipc';
 
-type Tab = 'backend' | 'sync' | 'background' | 'status';
+type Tab = 'backend' | 'kasas' | 'background' | 'status';
+type KasasSubTab = 'settings' | 'security' | 'bootstrap';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'backend', label: 'Backend' },
-  { id: 'sync', label: 'Sync' },
+  { id: 'kasas', label: 'Kasas' },
   { id: 'background', label: 'Background' },
   { id: 'status', label: 'Status' },
 ];
 
-const INTERVAL_PRESETS = ['15m', '30m', '1h', '3h', '6h', '12h', '24h'];
-const LOG_LEVELS: KasasLogLevel[] = ['debug', 'info', 'warn', 'error'];
+const KASAS_SUBTABS: { id: KasasSubTab; label: string }[] = [
+  { id: 'settings', label: 'Settings' },
+  { id: 'security', label: 'Security' },
+  { id: 'bootstrap', label: 'Bootstrap' },
+];
 
 const inputClass =
   'w-full rounded-lg border border-line bg-surface-raised px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-blue-500/60 focus:outline-none';
@@ -69,6 +77,7 @@ export function SettingsDialog({
   const connConfig = useConnection((s) => s.config);
 
   const [tab, setTab] = useState<Tab>('backend');
+  const [kasasTab, setKasasTab] = useState<KasasSubTab>('settings');
   const [draft, setDraft] = useState<KasasSettings | null>(settings);
   const [extUrl, setExtUrl] = useState(connConfig.baseUrl);
   const [extToken, setExtToken] = useState(connConfig.token);
@@ -93,8 +102,6 @@ export function SettingsDialog({
   }, [logs, tab]);
 
   const patch = (p: Partial<KasasSettings>) => setDraft((d) => (d ? { ...d, ...p } : d));
-  const patchSync = (p: Partial<KasasSettings['sync']>) =>
-    setDraft((d) => (d ? { ...d, sync: { ...d.sync, ...p } } : d));
 
   const onSave = async () => {
     if (!draft) return;
@@ -209,19 +216,6 @@ export function SettingsDialog({
                         className={cx(inputClass, 'w-28')}
                       />
                     </Row>
-                    <Row label="Log level">
-                      <select
-                        value={draft.logLevel}
-                        onChange={(e) => patch({ logLevel: e.target.value as KasasLogLevel })}
-                        className={cx(inputClass, 'w-32')}
-                      >
-                        {LOG_LEVELS.map((l) => (
-                          <option key={l} value={l}>
-                            {l}
-                          </option>
-                        ))}
-                      </select>
-                    </Row>
                     <Row label="Data directory" hint={status?.dataDir}>
                       <Button variant="subtle" onClick={() => void revealData()}>
                         <RiFolderOpenLine className="size-4" />
@@ -296,57 +290,35 @@ export function SettingsDialog({
                         <Pill tone={testResult.ok ? 'green' : 'red'}>{testResult.msg}</Pill>
                       )}
                     </div>
+                    <ExternalUpdateStatus />
                   </>
                 )}
               </div>
-            ) : tab === 'sync' ? (
-              <div className="divide-y divide-line/60">
-                <Row label="Background sync" hint="Periodically pull new financial data.">
-                  <Switch checked={draft.sync.enabled} onChange={(v) => patchSync({ enabled: v })} />
-                </Row>
-                <div className="py-2.5">
-                  <div className="mb-2 text-sm text-slate-200">Poll interval</div>
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    {INTERVAL_PRESETS.map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => patchSync({ interval: p })}
-                        className={cx(
-                          'rounded-md px-2.5 py-1 text-xs font-medium',
-                          draft.sync.interval === p
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white/5 text-slate-300 hover:bg-white/10',
-                        )}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                  <input
-                    value={draft.sync.interval}
-                    onChange={(e) => patchSync({ interval: e.target.value })}
-                    placeholder="e.g. 1h, 30m, 90m"
-                    className={cx(inputClass, 'w-40')}
-                    spellCheck={false}
-                  />
-                  <div className="mt-1 text-xs text-slate-500">
-                    Go duration format (h, m, s).
-                  </div>
+            ) : tab === 'kasas' ? (
+              <div>
+                <div className="mb-3 flex gap-1.5">
+                  {KASAS_SUBTABS.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setKasasTab(t.id)}
+                      className={cx(
+                        'rounded-md px-2.5 py-1 text-xs font-medium',
+                        kasasTab === t.id
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white/5 text-slate-300 hover:bg-white/10',
+                      )}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
                 </div>
-                <Row label="Sync on start" hint="Run one sync immediately when kasas starts.">
-                  <Switch
-                    checked={draft.sync.runOnStart}
-                    onChange={(v) => patchSync({ runOnStart: v })}
-                  />
-                </Row>
-                <Row label="Lookback (days)" hint="How far back each sync fetches. 0 = all available.">
-                  <input
-                    type="number"
-                    value={draft.sync.lookbackDays}
-                    onChange={(e) => patchSync({ lookbackDays: Number(e.target.value) || 0 })}
-                    className={cx(inputClass, 'w-28')}
-                  />
-                </Row>
+                {kasasTab === 'settings' ? (
+                  <KasasSettingsEditor />
+                ) : kasasTab === 'security' ? (
+                  <Security />
+                ) : (
+                  <BootstrapConfig />
+                )}
               </div>
             ) : tab === 'background' ? (
               <div>

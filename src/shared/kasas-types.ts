@@ -103,6 +103,28 @@ export interface SyncStatusResponse {
   latest: SyncLog | null;
 }
 
+/** Create/update body for a manual transaction (kasas transactionInput). */
+export interface TransactionInput {
+  account_id: string;
+  /** Signed decimal string in major units — never a number. */
+  amount: string;
+  /** YYYY-MM-DD, RFC3339, or unix seconds. */
+  date: string;
+  description?: string;
+  payee?: string;
+  memo?: string;
+  pending?: boolean;
+}
+
+/** Create/update body for a manual account (kasas accountInput). */
+export interface AccountInput {
+  name: string;
+  currency: string;
+  /** Signed decimal string in major units; defaults to "0" on create. */
+  balance?: string;
+  balance_date?: string;
+}
+
 /** Query params accepted by the transaction list/search endpoints. */
 export interface TransactionQuery {
   account_id?: string;
@@ -122,4 +144,436 @@ export interface KasasEvent {
   /** Event-specific payload; varies by `type`. */
   data?: unknown;
   [key: string]: unknown;
+}
+
+// --- Settings (runtime-editable config) -------------------------------------
+// Source of truth: kasas internal/settings/service.go (Status) + settings.go (Kind).
+
+/** Tells the editor which control to render and how the string value parses. */
+export type SettingKind = 'bool' | 'int' | 'string' | 'duration' | 'json';
+
+/** One editable setting with its effective value + override/restart state. */
+export interface SettingStatus {
+  key: string;
+  title: string;
+  help?: string;
+  kind: SettingKind;
+  /** Secret values are never echoed back; `value` is empty when secret. */
+  secret?: boolean;
+  /** Owning ingestion source ("plaid", "csv", …); empty for app settings. */
+  source?: string;
+  /** Settings-page grouping for app settings (empty for per-source settings). */
+  section?: string;
+  /** Allowed values, rendered as a select. */
+  enum?: string[];
+  value: string;
+  /** A stored override exists. */
+  set: boolean;
+  /** The stored value differs from the config-file/env base. */
+  overridden: boolean;
+  /** The change won't take effect until kasas restarts. */
+  restart_required: boolean;
+}
+
+export interface SettingsListResponse {
+  enabled: boolean;
+  restart_required: boolean;
+  settings: SettingStatus[];
+}
+
+export interface SetSettingResponse {
+  setting: SettingStatus;
+  restart_required: boolean;
+}
+
+// --- Ingestion sources -------------------------------------------------------
+// Source of truth: kasas internal/poller/engine.go (SourceStatus) +
+// internal/api/sources.go (SourceDTO) + internal/source/source.go (fields).
+
+/** A credential field a source accepts when pasting a single credential. */
+export interface CredentialField {
+  key: string;
+  title: string;
+  help?: string;
+}
+
+/** One masked, individually-removable credential of a multi-credential source. */
+export interface CredentialEntry {
+  id: string;
+  /** Masked display label (e.g. "••••cd34"). */
+  label: string;
+  removable: boolean;
+}
+
+export interface SourceDTO {
+  type: string;
+  archetype: string;
+  title: string;
+  /** Ready to sync (no credential needed, or one is stored). */
+  connected: boolean;
+  /** Accepts a pasted credential. */
+  credentialed: boolean;
+  /** Holds several credentials (add/remove individually). */
+  multi_credential: boolean;
+  /** Supports the browser OAuth connect flow. */
+  oauth: boolean;
+  credentials?: CredentialField[];
+  credential_entries?: CredentialEntry[];
+  /** False = registered but not built this run (its activating config is missing). */
+  active: boolean;
+  /** Editable, persisted per-source settings (rendered like app settings). */
+  config?: SettingStatus[];
+}
+
+export interface SourcesListResponse {
+  enabled: boolean;
+  restart_required: boolean;
+  sources: SourceDTO[];
+}
+
+export interface SyncHistoryResponse {
+  history: SyncLog[];
+}
+
+// --- Effective configuration (read-only bootstrap view) ----------------------
+// Source of truth: kasas internal/api/config.go (ConfigDTO). Secrets redacted.
+
+export interface ConfigDTO {
+  server: { addr: string };
+  log: { level: string; format: string };
+  database: { driver: string; path: string; dsn: string };
+  simplefin: { connected: boolean };
+  sync: { enabled: boolean; interval: string; lookback_days: number; run_on_start: boolean };
+  vault: {
+    enabled: boolean;
+    address: string;
+    mount: string;
+    path: string;
+    access_url_key: string;
+    token_set: boolean;
+  };
+  secrets: { file: string };
+  mcp: { enabled: boolean };
+  dashboard: { enabled: boolean };
+  update: { check: boolean; allow_apply: boolean; repository: string };
+  events: { enabled: boolean; retention_days: number; history_retention_days: number };
+  webhooks: { enabled: boolean; timeout: string; max_attempts: number };
+  security: { auth_required: boolean; token_source: string };
+}
+
+// --- Transaction detail: history, provenance, relationships ------------------
+// Source of truth: kasas internal/api/{transaction_history,provenance,relationships}.go.
+
+export interface LabelChange {
+  from: string;
+  to: string;
+}
+
+export interface VersionDiff {
+  fields: { field: string; from?: string; to?: string; before?: string; after?: string }[];
+  labels_added: Record<string, string>;
+  labels_removed: Record<string, string>;
+  labels_changed: Record<string, LabelChange>;
+  extensions_added: Record<string, string>;
+  extensions_removed: Record<string, string>;
+  extensions_changed: Record<string, LabelChange>;
+}
+
+export interface TransactionVersion {
+  version: number;
+  change_kind: string;
+  occurred_at: string;
+  /** The transaction snapshot at this version (shape ~ Transaction). */
+  transaction: Record<string, unknown>;
+  diff: VersionDiff;
+}
+
+export interface TransactionHistory {
+  transaction_id: string;
+  versions: TransactionVersion[];
+}
+
+export interface Provenance {
+  transaction_id: string;
+  source: string;
+  source_transaction_id: string;
+  account_id: string;
+  institution?: string;
+  imported_at: string;
+  last_seen: string;
+  transformations: { kind: string; occurred_at: string; summary: string }[];
+}
+
+/** One edge in a transaction's relationship neighborhood (outbound + inbound). */
+export interface RelationshipEdge {
+  kind: string;
+  target: string;
+  /** "outbound" | "inbound" when kasas reports direction. */
+  direction?: string;
+}
+
+export interface RelationshipsResponse {
+  id: string;
+  relationships: RelationshipEdge[];
+}
+
+export interface RelationshipKind {
+  kind: string;
+  count: number;
+}
+
+// --- Event stream rows -------------------------------------------------------
+
+export interface KasasEventRow {
+  sequence: number;
+  event_id: string;
+  type: string;
+  entity_type: string;
+  entity_id: string;
+  occurred_at: string;
+  data: unknown;
+}
+
+export interface EventsResponse {
+  events: KasasEventRow[];
+  next: number;
+}
+
+// --- Rules -------------------------------------------------------------------
+
+export interface Rule {
+  id: number;
+  name: string;
+  query: string;
+  labels: Record<string, string>;
+  extensions: Record<string, unknown>;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RuleInput {
+  name: string;
+  query: string;
+  labels: Record<string, string>;
+  extensions?: Record<string, unknown>;
+  enabled?: boolean;
+}
+
+export interface RuleRunResult {
+  matched: number;
+  updated: number;
+}
+
+// --- Webhooks ----------------------------------------------------------------
+
+export interface Webhook {
+  id: number;
+  url: string;
+  event_types: string[];
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  last_status: number;
+  last_error?: string;
+  last_attempt_at: string | null;
+  last_success_at: string | null;
+  /** Present only in create/get/update/rotate responses, never in list. */
+  secret?: string;
+}
+
+export interface WebhookInput {
+  url: string;
+  event_types: string[];
+  enabled?: boolean;
+}
+
+export interface WebhookTestResult {
+  status: number;
+  delivered: boolean;
+  error?: string;
+}
+
+// --- Security: dashboard token + API keys ------------------------------------
+
+export interface ApiKey {
+  id: number;
+  name: string;
+  prefix: string;
+  scope: string;
+  created_at: string;
+  last_used_at: string | null;
+  /** Full key, returned only once on creation. */
+  key?: string;
+}
+
+export interface ApiKeyInput {
+  name: string;
+  scope: string;
+}
+
+export interface TokenResponse {
+  /** The token, returned once when generated/set. */
+  token?: string;
+  auth_required: boolean;
+  token_source: string;
+}
+
+// --- Plugins -----------------------------------------------------------------
+// Source of truth: kasas internal/api/plugins.go (PluginDTO) + marketplace.go.
+
+export interface Plugin {
+  id: number;
+  name: string;
+  runtime: string;
+  version?: string;
+  description?: string;
+  enabled: boolean;
+  loaded: boolean;
+  on_disk: boolean;
+  /** loaded | disabled | error | missing */
+  state: string;
+  hooks: string[];
+  capabilities: string[];
+  granted_capabilities: string[];
+  /** Manifest-declared egress allowlist (net:fetch). */
+  net_allow?: string[];
+  /** Subset of net_allow the operator granted private/LAN access to. */
+  net_grants?: string[];
+  last_status: number;
+  last_error?: string;
+  last_run_at: string | null;
+  last_success_at: string | null;
+}
+
+export interface PluginsResponse {
+  /** false when the plugin system is disabled (plugins.enabled/events.enabled). */
+  enabled: boolean;
+  plugins: Plugin[];
+}
+
+export interface EgressEntry {
+  time: string;
+  method: string;
+  host: string;
+  url: string;
+  status: number;
+  bytes: number;
+  duration_ms: number;
+  error?: string;
+}
+
+export interface EgressResponse {
+  enabled: boolean;
+  entries: EgressEntry[];
+}
+
+export interface UninstallResult {
+  name: string;
+  uninstalled: boolean;
+  hook_ran: boolean;
+  hook_error?: string;
+}
+
+export interface RegistryPlugin {
+  name: string;
+  version: string;
+  description: string;
+  author: string;
+  license: string;
+  homepage: string;
+  runtime: string;
+  hooks: string[];
+  capabilities: string[];
+  capability_tier: string;
+  /** Trust tier, e.g. "verified" | "connected". */
+  tier: string;
+  ui?: { title: string; icon: string };
+  net?: { allow: string[] };
+  installed: boolean;
+  installed_version?: string;
+  update_available: boolean;
+}
+
+export interface RegistryResponse {
+  /** false when the registry/marketplace is disabled or unreachable. */
+  available: boolean;
+  plugins: RegistryPlugin[];
+}
+
+// --- Plugin pages (server-rendered declarative UI) ---------------------------
+// Source of truth: kasas internal/plugins/pagedoc.go + internal/api/plugins_pages.go.
+// The server validates/normalizes every block, so this renderer can be thin.
+
+export interface PluginPageInfo {
+  name: string;
+  title: string;
+  icon: string;
+}
+
+export interface PageField {
+  name: string;
+  label: string;
+  /** text (default) | number | toggle | select */
+  kind?: string;
+  value?: string;
+  placeholder?: string;
+  help?: string;
+  options?: string[];
+}
+
+export interface PageKV {
+  key: string;
+  value: string;
+}
+
+export interface PageAction {
+  id: string;
+  label: string;
+  /** "" | primary | danger */
+  style?: string;
+  params?: Record<string, string>;
+}
+
+export interface PageBlock {
+  /** heading | text | stat | keyvalue | table | actions | form | divider */
+  type: string;
+  text?: string;
+  label?: string;
+  value?: string;
+  hint?: string;
+  items?: PageKV[];
+  columns?: string[];
+  rows?: string[][];
+  actions?: PageAction[];
+  /** Form id (Type === "form"); the action dispatched on submit. */
+  id?: string;
+  fields?: PageField[];
+  submit_label?: string;
+}
+
+export interface PluginPageDoc {
+  title?: string;
+  blocks: PageBlock[];
+}
+
+export interface PluginPagesResponse {
+  pages: PluginPageInfo[];
+}
+
+export interface PluginPageResponse {
+  name: string;
+  page: PluginPageDoc;
+}
+
+// --- Self-update status (external mode, read-only) ---------------------------
+// kasas internal/api/update.go. Bundled-mode updates are sillview-owned (updater.ts).
+
+export interface KasasUpdateStatus {
+  current: string;
+  latest: string;
+  update_available: boolean;
+  release_url: string;
+  checked_at: string;
+  can_apply: boolean;
 }

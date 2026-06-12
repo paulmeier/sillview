@@ -69,6 +69,9 @@ export const WIDGETS: WidgetDefinition[] = [
     icon: RiListCheck,
     defaultSize: { w: 6, h: 7, minW: 4, minH: 4 },
     component: TransactionsWidget,
+    configFields: [
+      { key: 'limit', label: 'Rows shown', type: 'number', default: 40, help: 'How many recent transactions to list.' },
+    ],
   },
   {
     type: 'spend-by-label',
