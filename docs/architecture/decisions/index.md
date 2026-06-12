@@ -27,6 +27,7 @@ follows the same skeleton so reviewers know where to look:
 | [0001](0001-user-created-widgets-tiered-model.md) | User-created widgets: a declarative-first, tiered model | Proposed |
 | [0002](0002-backend-capability-detection-and-plugin-activation.md) | Backend-gated widgets: capability detection and plugin activation | Proposed |
 | [0003](0003-third-party-code-widget-sandboxing.md) | Third-party code widgets: the sandbox and trust model | Proposed (deferred) |
+| [0004](0004-external-market-data-ownership-and-storage.md) | External market data: ownership, storage, and access | Proposed |
 
 ## Reading order
 
@@ -36,6 +37,11 @@ orthogonal — it covers widgets that depend on a backend *plugin or capability*
 regardless of which tier built them. ADR-0003 is the deliberately deferred, security-
 heavy decision about ever running **third-party code** (the ladder's top rung); it
 exists so the trade space is written down before anyone is tempted to ship it.
+ADR-0004 answers a different question — where **external market/reference data**
+(benchmarks, quotes, FX) lives and who ingests it — and narrows ADR-0002's
+"kind (b)" external-egress escape hatch in the process; it ends with the queue of
+follow-up decisions (provider choice, balance snapshots, comparison methodology,
+valuation) it deliberately leaves open.
 
 ## Writing a new ADR
 
