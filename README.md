@@ -8,6 +8,8 @@ visualized with **Tremor**-style charts (Recharts), built with **Electron Forge
 
 📖 **Documentation:** [paulmeier.github.io/sillview](https://paulmeier.github.io/sillview/)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## Quick start
 
 ```bash
@@ -126,3 +128,15 @@ build. Commits follow [Conventional Commits](https://www.conventionalcommits.org
 and versioning + releases are automated by
 [release-please](https://github.com/googleapis/release-please). See
 [CONTRIBUTING.md](CONTRIBUTING.md) for the full local workflow.
+
+Contributors sign a one-time [Contributor License Agreement](CLA.md) — the CLA
+Assistant bot prompts you automatically on your first pull request.
+
+## License
+
+Sillview is free and open source under the [MIT License](LICENSE) for personal,
+non-commercial, and open-source use.
+
+A [**commercial license**](LICENSE_COMMERCIAL.md) is available for hosted/SaaS or
+proprietary commercial use. The MIT license plus a Contributor License Agreement
+keep the door open to a formal dual commercial/open-source model later.
