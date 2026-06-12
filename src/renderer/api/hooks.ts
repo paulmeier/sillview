@@ -5,9 +5,11 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { kasas } from './kasas';
+import { kasas, KasasError } from './kasas';
 import { useConnection } from '../store/connection';
-import type { KasasEvent, TransactionQuery } from '../../shared/kasas-types';
+import type { KasasEvent, MarketPointsResponse, TransactionQuery } from '../../shared/kasas-types';
+
+const EMPTY_POINTS: MarketPointsResponse = { provider: '', as_of: '', fresh: false, points: [] };
 
 export interface AsyncState<T> {
   data?: T;
@@ -99,6 +101,46 @@ export interface LoggedEvent {
   /** Client-side arrival time (ms epoch) — events carry no reliable timestamp. */
   at: number;
   event: KasasEvent;
+}
+
+/** List configured market series (ADR 0006), with cache freshness. */
+export function useMarketSeries(live = true) {
+  const keys = useKeys(live);
+  return useAsync(() => kasas.marketSeries(), keys);
+}
+
+/**
+ * A market series' daily closes through the read-through cache. With live=true it
+ * refetches when kasas emits events (a `market.updated` after a background refresh
+ * ticks the event nonce), so a stale-then-fresh series updates on its own.
+ */
+export function useMarketPoints(id: string, live = true) {
+  const keys = useKeys(live);
+  return useAsync(() => (id ? kasas.marketPoints(id) : Promise.resolve(EMPTY_POINTS)), [...keys, id]);
+}
+
+/**
+ * Capability gate (ADR-0002): whether the connected kasas exposes /api/v1/market/*.
+ * A backend predating market data answers {enabled:false} or 404; either way the
+ * widget should degrade to a "requires a newer kasas" tile, not a broken chart.
+ */
+export function useMarketAvailable() {
+  const keys = useKeys(false);
+  const state = useAsync(async () => {
+    try {
+      const r = await kasas.marketSeries();
+      return r.enabled === true;
+    } catch (e) {
+      // Only a 404 (route absent) is a definitive capability gap. Transient errors
+      // (5xx, network, timeout) must NOT trip the "needs a newer kasas" tile — treat
+      // the feature as present and let the widget's own fetch surface the error.
+      if (e instanceof KasasError && e.status === 404) return false;
+      return true;
+    }
+  }, keys);
+  // `data === false` is the only definitive "unavailable"; undefined (loading) and
+  // true both keep the widget on its normal path.
+  return { available: state.data !== false, loading: state.loading };
 }
 
 /** Subscribe to the live kasas event stream; keeps the most recent `limit`. */

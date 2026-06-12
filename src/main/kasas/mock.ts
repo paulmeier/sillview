@@ -640,6 +640,57 @@ const ok = (data: unknown): KasasResult => ({ ok: true, status: 200, data });
 
 const notFound = (what: string): KasasResult => ({ ok: false, status: 404, error: `mock: ${what} not found` });
 
+// --- Market / reference data fixtures (ADR 0006) ----------------------------
+// A couple of seeded series with deterministic synthetic daily closes generated
+// relative to `now`, so the benchmark/series widgets render offline. Values are
+// decimal STRINGS, like real market data.
+
+interface MockSeries {
+  id: string;
+  symbol: string;
+  kind: string;
+  currency: string;
+  adjusted: boolean;
+  name: string;
+}
+
+const marketSeries: MockSeries[] = [
+  { id: 'spy', symbol: 'SPY', kind: 'index', currency: 'USD', adjusted: false, name: 'S&P 500 ETF (SPY)' },
+  { id: 'agg', symbol: 'AGG', kind: 'index', currency: 'USD', adjusted: false, name: 'US Aggregate Bond ETF' },
+];
+const marketConfigured = true; // mock has a "key" so widgets show data offline
+
+const isoDate = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
+const seedFor = (id: string): number => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+const startValue = (id: string): number => ({ spy: 480, agg: 98 } as Record<string, number>)[id] ?? 100;
+
+/** ~180 deterministic daily closes ending today, with a gentle upward drift. */
+function marketPointsFor(id: string): { date: string; value: string }[] {
+  const r = mulberry32(seedFor(id));
+  const days = 180;
+  let v = startValue(id) * 0.9;
+  const out: { date: string; value: string }[] = [];
+  for (let i = days; i >= 0; i--) {
+    v = v * (1 + (r() - 0.46) * 0.02);
+    out.push({ date: isoDate(now - i * DAY), value: v.toFixed(4) });
+  }
+  return out;
+}
+
+function marketSeriesList() {
+  return marketSeries.map((s) => {
+    const pts = marketPointsFor(s.id);
+    return {
+      ...s,
+      provider: 'mock',
+      as_of: pts[pts.length - 1].date,
+      points: pts.length,
+      fetched_at: Math.floor(now / 1000),
+      fresh: true,
+    };
+  });
+}
+
 function route(req: KasasRequest): KasasResult {
   const { path, query } = req;
 
@@ -1141,6 +1192,46 @@ function route(req: KasasRequest): KasasResult {
   if (path === '/api/v1/sync/history') {
     const limit = Number(query?.limit ?? 20) || 20;
     return ok({ history: syncRuns.slice(0, limit) });
+  }
+
+  // --- market / reference data (ADR 0006) --------------------------------
+  if (path === '/api/v1/market/series' && req.method === 'GET') {
+    return ok({ enabled: true, provider: 'mock', configured: marketConfigured, series: marketSeriesList() });
+  }
+  if (path === '/api/v1/market/series' && req.method === 'POST') {
+    const b = (req.body ?? {}) as Partial<MockSeries>;
+    const id = String(b.id ?? '').trim();
+    if (!id) return { ok: false, status: 400, error: 'mock: series id required' };
+    if (marketSeries.some((s) => s.id === id)) return { ok: false, status: 409, error: 'mock: duplicate id' };
+    const s: MockSeries = {
+      id,
+      symbol: String(b.symbol ?? id).trim(),
+      kind: String(b.kind ?? 'equity'),
+      currency: String(b.currency ?? 'USD'),
+      adjusted: Boolean(b.adjusted),
+      name: String(b.name ?? ''),
+    };
+    marketSeries.push(s);
+    return { ok: true, status: 201, data: { ...s, provider: 'mock', points: 0, fresh: false } };
+  }
+  const mktPoints = path.match(/^\/api\/v1\/market\/series\/([^/]+)\/points$/);
+  if (mktPoints && req.method === 'GET') {
+    const id = mktPoints[1];
+    if (!marketSeries.some((s) => s.id === id)) return notFound(`series ${id}`);
+    let pts = marketPointsFor(id);
+    const since = query?.since ? String(query.since) : '';
+    const until = query?.until ? String(query.until) : '';
+    if (since) pts = pts.filter((p) => p.date >= since);
+    if (until) pts = pts.filter((p) => p.date <= until);
+    return ok({ provider: 'mock', as_of: pts[pts.length - 1]?.date ?? '', fresh: true, points: pts });
+  }
+  const mktDel = path.match(/^\/api\/v1\/market\/series\/([^/]+)$/);
+  if (mktDel && req.method === 'DELETE') {
+    const id = mktDel[1];
+    const i = marketSeries.findIndex((s) => s.id === id);
+    if (i < 0) return notFound(`series ${id}`);
+    marketSeries.splice(i, 1);
+    return ok({ id, deleted: true });
   }
 
   return { ok: false, status: 404, error: `mock: no fixture for ${req.method} ${path}` };

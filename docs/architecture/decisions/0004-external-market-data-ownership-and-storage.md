@@ -1,6 +1,8 @@
 # ADR-0004: External market data — ownership, storage, and access
 
-- **Status:** Proposed
+- **Status:** Accepted (Phase 1–2 implemented — kasas `market_*` read-through cache
+  + Alpha Vantage; sillview Benchmark Comparison & Market Series widgets, provider
+  settings, capability gating, and mock coverage)
 - **Date:** 2026-06-12
 - **Deciders:** Paul Meier
 - **Related:** [ADR-0001](0001-user-created-widgets-tiered-model.md) ·
@@ -328,16 +330,17 @@ The case against — recorded so we walk in clear-eyed.
 
 ## Implementation plan
 
-- [ ] **Phase 1 (kasas):** `market_*` cache migrations + store methods;
+- [x] **Phase 1 (kasas):** `market_*` cache migrations + store methods;
       demand-driven read-through fetch (TTL, single-flight, stale-while-revalidate
       + `market.updated` event) behind a provider interface; optional cache-warm
       via the generic per-source sync; `GET /api/v1/market/*` read routes;
-      `kasas market reset`.
-- [ ] **Phase 2 (Sillview):** Benchmark-comparison widget through the existing
-      broker; provider settings UI (admin-tier; read-only for API-key
-      connections); ADR-0002 capability gating for backends without
-      `/api/v1/market/*`; honest labeling (price vs total-return,
-      "balance ≠ return"); `KASAS_MOCK` routes for `/api/v1/market/*`.
+      `kasas market reset`. *(Alpha Vantage provider; verified end-to-end.)*
+- [x] **Phase 2 (Sillview):** Benchmark-comparison widget + Market Series widget
+      through the existing broker; provider settings UI (Settings → Kasas → Market,
+      admin-tier; read-only for API-key connections); ADR-0002 capability gating
+      (`useMarketAvailable`) for backends without `/api/v1/market/*`; honest
+      labeling (price vs total-return, "balance ≠ return"); `KASAS_MOCK` routes for
+      `/api/v1/market/*`.
 - [ ] **Phase 3:** add the market endpoints to ADR-0001's Tier-1 fixed endpoint
       enumeration so query-builder specs can chart benchmarks.
 - [ ] **Phase 4+:** governed by the follow-up ADRs below — notably balance

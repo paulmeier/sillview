@@ -7,7 +7,7 @@ export interface WidgetProps {
   config?: Record<string, unknown>;
 }
 
-export type WidgetCategory = 'Overview' | 'Accounts' | 'Spending' | 'Activity';
+export type WidgetCategory = 'Overview' | 'Accounts' | 'Spending' | 'Activity' | 'Market';
 
 /** One configurable knob for a widget instance, rendered in the Configure dialog. */
 export interface WidgetConfigField {
