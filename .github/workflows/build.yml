@@ -87,5 +87,9 @@ jobs:
           # distributables. `--clobber` makes re-runs idempotent.
           gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
             || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
-          mapfile -t assets < <(find out/make -type f \( -name '*.dmg' -o -name '*.zip' \))
+          # macOS runners ship bash 3.2, which has no `mapfile`; collect the
+          # distributables with a portable read loop instead.
+          assets=()
+          while IFS= read -r f; do assets+=("$f"); done \
+            < <(find out/make -type f \( -name '*.dmg' -o -name '*.zip' \))
           gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
