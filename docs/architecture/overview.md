@@ -94,6 +94,10 @@ src/
 A third, equally defining trait — Sillview **runs and manages the kasas binary
 itself** — is covered in [Managed kasas Backend](managed-backend.md).
 
+Significant, hard-to-reverse design choices — including the proposed direction for
+**user-created widgets** and **backend-gated widgets** — are recorded as
+[Architecture Decision Records](decisions/index.md).
+
 ## The `window.api` surface
 
 Everything the renderer can do is one object, declared once in
