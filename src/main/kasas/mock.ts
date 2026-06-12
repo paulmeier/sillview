@@ -412,6 +412,7 @@ interface MockSourceDef {
   multi: boolean;
   oauth: boolean;
   credentials: CredentialField[];
+  egress?: string[];
 }
 
 const SOURCE_DEFS: MockSourceDef[] = [
@@ -421,9 +422,10 @@ const SOURCE_DEFS: MockSourceDef[] = [
   { type: 'bitcoin', archetype: 'pull', title: 'Bitcoin', credentialed: true, multi: true, oauth: false, credentials: [{ key: 'address', title: 'Watch address' }] },
   { type: 'ethereum', archetype: 'pull', title: 'Ethereum', credentialed: true, multi: true, oauth: false, credentials: [{ key: 'address', title: 'Watch address' }] },
   { type: 'csv', archetype: 'file', title: 'CSV import', credentialed: false, multi: false, oauth: true, credentials: [] },
+  { type: 'market', archetype: 'reference', title: 'Market data', credentialed: true, multi: false, oauth: false, credentials: [{ key: 'api_key', title: 'API key', help: 'A free Alpha Vantage key works — alphavantage.co/support/#api-key' }], egress: ['www.alphavantage.co'] },
 ];
 
-const sourceConnected = new Set<string>(['simplefin']);
+const sourceConnected = new Set<string>(['simplefin', 'market']);
 const sourceEntries = new Map<string, CredentialEntry[]>([
   ['bitcoin', [{ id: 'btc1', label: 'bc1q****k2g7', removable: true }]],
 ]);
@@ -458,6 +460,7 @@ function buildSources(): SourceDTO[] {
       oauth: d.oauth,
       credentials: d.credentials.length > 0 ? d.credentials : undefined,
       credential_entries: d.multi ? entries : undefined,
+      egress: d.egress,
       active: sourceActive(d.type),
       config,
     };

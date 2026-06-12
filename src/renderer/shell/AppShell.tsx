@@ -6,6 +6,7 @@ import { RiErrorWarningLine } from '@remixicon/react';
 import { Sidebar } from './Sidebar';
 import { ROUTES } from './routes';
 import { PluginPage } from '../pages/PluginPage';
+import { SourceDetail } from '../pages/SourceDetail';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { useConnection } from '../store/connection';
 import { useBackend } from '../store/backend';
@@ -52,6 +53,7 @@ export function AppShell() {
               <Route key={route.path} path={route.path} element={route.element} />
             ),
           )}
+          <Route path="/sources/:type" element={<SourceDetail />} />
           <Route path="/ext/:name" element={<PluginPage />} />
         </Routes>
       </main>
