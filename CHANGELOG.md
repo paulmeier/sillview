@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/paulmeier/sillview/compare/v0.2.1...v0.3.0) (2026-06-12)
+
+
+### Features
+
+* market-data widgets & provider settings (ADR-0004) ([#25](https://github.com/paulmeier/sillview/issues/25)) ([594ea8e](https://github.com/paulmeier/sillview/commit/594ea8ebd04581a149ca26d1b74d05a544c9f056))
+
 ## [0.2.1](https://github.com/paulmeier/sillview/compare/v0.2.0...v0.2.1) (2026-06-12)
 
 
