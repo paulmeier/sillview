@@ -31,6 +31,20 @@ Configure data sources (SimpleFIN, exchange addresses, etc.) for now via kasas's
 own web UI at `http://127.0.0.1:8080`; in-app source setup is a planned
 follow-up.
 
+### Offline / no-backend mode
+
+To work on the UI without kasas, a real connection, or any of your own data:
+
+```bash
+npm run start:mock   # KASAS_MOCK=1 — serve fixtures, no backend
+```
+
+With `KASAS_MOCK=1` the main process answers every REST call from in-memory
+fixtures (`src/main/kasas/mock.ts`), doesn't spawn the kasas binary, and feeds
+the live stream synthetic events. The dataset (accounts, ~6 months of
+transactions, labels, a sync run) is generated relative to "now" so every widget
+has data. The flag is off by default, so a normal `npm start` is unchanged.
+
 ### Other scripts
 
 ```bash
