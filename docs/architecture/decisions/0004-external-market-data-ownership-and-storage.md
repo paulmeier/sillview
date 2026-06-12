@@ -45,8 +45,7 @@ Three questions need one coherent answer:
 1. **Who owns external data — kasas or Sillview?**
 2. **Where does it live?** (The proposal on the table: a second SQLite database,
    independent of the ledger.)
-3. **How do widgets mesh it with ledger data**, and could users one day share these
-   datasets (a "datashare marketplace")?
+3. **How do widgets mesh it with ledger data?**
 
 ## Decision drivers
 
@@ -64,8 +63,8 @@ Three questions need one coherent answer:
 - **Decimal-string discipline.** kasas never floats money; index levels and NAVs get
   the same treatment (a price is money per unit).
 - **Licensing reality.** Market data is licensed IP. Personal use of fetched data is
-  one thing; *redistribution* is almost universally prohibited — which constrains
-  the marketplace idea hard (see [Devil's advocate](#devils-advocate)).
+  one thing; *redistribution* is almost universally prohibited (see
+  [Devil's advocate](#devils-advocate)).
 - **"Very vanilla."** Prefer extending existing, conventional machinery (sources,
   poller, migrations, read-tier REST) over inventing parallel infrastructure.
 - **Offline dev must keep working.** New endpoints need `KASAS_MOCK=1` coverage.
@@ -149,8 +148,6 @@ cache with a TTL** (amended from this ADR's original scheduled-copy model: copie
 go stale and accrue backfill obligations; a demand-driven cache self-heals and
 burns quota only when someone is actually looking); Sillview owns visualization
 and comparison math.
-The "datashare marketplace" is **deferred and reframed** as sharing *connectors*,
-never data (see Devil's advocate and Follow-up ADRs).
 
 ```mermaid
 flowchart LR
@@ -278,16 +275,11 @@ The case against — recorded so we walk in clear-eyed.
   shown. (2) Account balances grow with *deposits*; an account receiving monthly
   contributions "beats" any index. Without flow-adjusted math (ADR-0007) the
   widget must say "balance", never "return".
-- **Licensing is a minefield, and it kills the marketplace as proposed.** Index
-  levels are licensed IP (S&P DJI); most providers' terms prohibit redistribution
-  even of "free" data; unofficial Yahoo endpoints violate ToS outright. A
-  marketplace where users **share fetched data** makes the project an unlicensed
-  data vendor — and if "datashare" ever meant sharing slices of *personal ledger*
-  data, anonymization-by-hand is a re-identification trap. The viable reframe:
-  share **connectors** (specs/plugins that fetch from the original source under
-  each user's own key) through the existing kasas-plugins registry — datasets as
-  code, never as data. That is follow-up ADR-0008, and it is deliberately *not*
-  part of this decision.
+- **Licensing is a minefield.** Index levels are licensed IP (S&P DJI); most
+  providers' terms prohibit redistribution even of "free" data; unofficial Yahoo
+  endpoints violate ToS outright. Fetched data is for the user's own display and
+  analysis — never redistributed — and per-provider attribution requirements have
+  to be honored in the chart copy.
 - **Provider risk is permanent ops burden.** Free tiers are tight
   (Alpha Vantage: ~25 req/day) and providers die (IEX Cloud, 2024). Users must
   bring their own key for anything beyond a keyless default; quotas, backoff, and
@@ -319,7 +311,7 @@ The case against — recorded so we walk in clear-eyed.
 - Reuses kasas's ingestion machinery nearly wholesale; the ledger stays pure via
   the no-FK, rebuildable-cache contract.
 - Valuation (BTC→USD, EUR→USD) becomes a natural future client of the same tables
-  (ADR-0009) instead of a separate system.
+  (ADR-0008) instead of a separate system.
 
 ### Negative / risks
 
@@ -369,12 +361,7 @@ Each is a separable decision deliberately *not* made here:
 - **ADR-0007 · Performance & benchmark methodology** — time-weighted vs
   money-weighted return, total-return vs price indices, normalization windows,
   contribution handling; the math that turns "overlay" into "comparison".
-- **ADR-0008 · Sharing external-data connectors** — the "datashare marketplace"
-  reframed: distribute *connector definitions* (and later widget specs per
-  ADR-0001 Tier 2) via the existing kasas-plugins registry with its
-  integrity-verification model; explicitly rule out redistributing fetched data
-  and sharing personal ledger slices.
-- **ADR-0009 · Valuation & currency conversion** — FX/crypto series from the same
+- **ADR-0008 · Valuation & currency conversion** — FX/crypto series from the same
   `market_*` infrastructure powering a base-currency view of multi-currency
   net worth; where conversion is computed (kasas vs widget) and how it is labeled.
 

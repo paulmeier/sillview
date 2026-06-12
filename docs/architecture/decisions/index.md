@@ -41,7 +41,7 @@ ADR-0004 answers a different question — where **external market/reference data
 (benchmarks, quotes, FX) lives and who ingests it — and narrows ADR-0002's
 "kind (b)" external-egress escape hatch in the process; it ends with the queue of
 follow-up decisions (provider choice, balance snapshots, comparison methodology,
-connector sharing, valuation) it deliberately leaves open.
+valuation) it deliberately leaves open.
 
 ## Writing a new ADR
 
