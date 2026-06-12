@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/paulmeier/sillview/compare/v0.3.0...v0.3.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* restore page scrolling by adding min-h-0 to PageShell ([#27](https://github.com/paulmeier/sillview/issues/27)) ([98b67ee](https://github.com/paulmeier/sillview/commit/98b67ee610e9f40d485590ebd3e151c3a3da8cdf))
+
 ## [0.3.0](https://github.com/paulmeier/sillview/compare/v0.2.1...v0.3.0) (2026-06-12)
 
 
