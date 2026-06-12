@@ -13,6 +13,15 @@
   (the backend half of this decision, in kasas's own ADR log — each repo numbers
   its own; lands with kasas PR #125)
 
+> **Update (2026-06-12):** the provider settings UI moved out of the Settings
+> dialog onto the **Sources** page. Market data is now a source card alongside
+> SimpleFIN/Plaid/Teller, and every source opens a detail page (`/sources/:type`)
+> holding its credentials and config — for market, the API key (a single
+> credential, through the same form as a bank token) plus the series manager. The
+> decision below is otherwise unchanged: keys and cache stay server-side via
+> kasas's admin-tier source-credential routes. References to "Settings → Kasas →
+> Market" below are superseded by this.
+
 ## Context and problem statement
 
 The motivating user story: *"How is my mutual fund doing compared to the S&P 500?"*
