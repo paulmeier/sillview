@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/paulmeier/sillview/compare/v0.1.2...v0.1.3) (2026-06-12)
+
+
+### Documentation
+
+* add ADRs for user-created widgets and backend-plugin activation ([#16](https://github.com/paulmeier/sillview/issues/16)) ([f78a49a](https://github.com/paulmeier/sillview/commit/f78a49a49403336a7e6dc653f066ff313eb7fb5b))
+
 ## [0.1.2](https://github.com/paulmeier/sillview/compare/v0.1.1...v0.1.2) (2026-06-12)
 
 
