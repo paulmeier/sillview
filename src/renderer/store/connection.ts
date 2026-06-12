@@ -21,6 +21,12 @@ interface ConnectionState {
   version: number;
   /** Throttled live-event tick — widgets that opt in refetch when it changes. */
   eventNonce: number;
+  /**
+   * Per-family throttled ticks keyed by the event-type prefix (the part before
+   * the first dot, e.g. "transaction", "rule", "plugin"). Pages subscribe only
+   * to the families they care about so a label change doesn't refetch Plugins.
+   */
+  familyNonces: Record<string, number>;
 
   init: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -35,6 +41,7 @@ export const useConnection = create<ConnectionState>((set, get) => ({
   streamConnected: false,
   version: 0,
   eventNonce: 0,
+  familyNonces: {},
 
   init: async () => {
     const config = await window.api.connection.get();
@@ -45,11 +52,21 @@ export const useConnection = create<ConnectionState>((set, get) => ({
       window.api.events.onStatus((s) => set({ streamConnected: s.connected }));
 
       let lastTick = 0;
-      window.api.events.onEvent(() => {
+      const familyTicks: Record<string, number> = {};
+      window.api.events.onEvent((e) => {
         const now = Date.now();
+        // Global throttled tick (back-compat for widgets that opt into `live`).
         if (now - lastTick > 1000) {
           lastTick = now;
           set((s) => ({ eventNonce: s.eventNonce + 1 }));
+        }
+        // Per-family throttled tick for targeted page refreshes.
+        const family = String(e.type ?? '').split('.')[0] || 'message';
+        if (now - (familyTicks[family] ?? 0) > 1000) {
+          familyTicks[family] = now;
+          set((s) => ({
+            familyNonces: { ...s.familyNonces, [family]: (s.familyNonces[family] ?? 0) + 1 },
+          }));
         }
       });
 

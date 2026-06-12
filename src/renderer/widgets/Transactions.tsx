@@ -3,9 +3,12 @@ import { amountColor, formatSignedMoney } from '../lib/money';
 import { formatDate } from '../lib/time';
 import { Pill, WidgetState } from '../components/ui';
 import { accountCurrencyMap } from './util';
+import type { WidgetProps } from './types';
 
-export function TransactionsWidget() {
-  const txns = useTransactions({ limit: 40 });
+export function TransactionsWidget({ config }: WidgetProps) {
+  const limit = Number(config?.limit) || 40;
+  const accountId = (config?.accountId as string) || undefined;
+  const txns = useTransactions({ limit, account_id: accountId });
   const accounts = useAccounts(false);
 
   if (txns.loading || txns.error)

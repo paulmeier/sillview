@@ -123,6 +123,7 @@ export const IpcChannels = {
   eventsStop: 'events:stop',
   dashboardsLoad: 'dashboards:load',
   dashboardsSave: 'dashboards:save',
+  systemOpenExternal: 'system:openExternal',
   // managed backend (renderer -> main)
   backendGetSettings: 'backend:getSettings',
   backendSetSettings: 'backend:setSettings',
@@ -169,6 +170,10 @@ export interface SillviewApi {
     /** Returns the persisted JSON blob, or null on first run. */
     load(): Promise<string | null>;
     save(contents: string): Promise<void>;
+  };
+  system: {
+    /** Open an http(s) URL in the user's default browser (e.g. OAuth consent). */
+    openExternal(url: string): Promise<void>;
   };
   backend: {
     getSettings(): Promise<KasasSettings>;

@@ -51,6 +51,10 @@ const api: SillviewApi = {
     save: (contents: string) =>
       ipcRenderer.invoke(IpcChannels.dashboardsSave, contents) as Promise<void>,
   },
+  system: {
+    openExternal: (url: string) =>
+      ipcRenderer.invoke(IpcChannels.systemOpenExternal, url) as Promise<void>,
+  },
   backend: {
     getSettings: () =>
       ipcRenderer.invoke(IpcChannels.backendGetSettings) as Promise<KasasSettings>,
