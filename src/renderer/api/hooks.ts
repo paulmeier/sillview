@@ -7,8 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { kasas } from './kasas';
 import { useConnection } from '../store/connection';
-import type { KasasEvent } from '../../shared/kasas-types';
-import type { TransactionQuery } from '../../shared/kasas-types';
+import type { KasasEvent, TransactionQuery } from '../../shared/kasas-types';
 
 export interface AsyncState<T> {
   data?: T;
