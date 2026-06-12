@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/paulmeier/sillview/compare/v0.1.3...v0.1.4) (2026-06-12)
+
+
+### Documentation
+
+* add ADR-0004 for external market data ownership and storage ([#18](https://github.com/paulmeier/sillview/issues/18)) ([fba55c9](https://github.com/paulmeier/sillview/commit/fba55c9d5099a5949e383dfafaa77e0e01581a18))
+
 ## [0.1.3](https://github.com/paulmeier/sillview/compare/v0.1.2...v0.1.3) (2026-06-12)
 
 
