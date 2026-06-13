@@ -8,8 +8,12 @@
  */
 
 import { app } from 'electron';
+import { execFile } from 'node:child_process';
 import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
+import { promisify } from 'node:util';
+
+const execFileP = promisify(execFile);
 
 /** The kasas executable's filename — `.exe` on Windows, bare elsewhere. */
 const BINARY_NAME = process.platform === 'win32' ? 'kasas.exe' : 'kasas';
@@ -74,7 +78,29 @@ export async function ensureBinary(): Promise<string | null> {
   if (needCopy) {
     await fs.copyFile(bundled, dest);
     await fs.chmod(dest, 0o755);
+    await resignAdHoc(dest);
     await fs.writeFile(marker, version, 'utf8');
   }
   return dest;
+}
+
+/**
+ * Re-sign the copied binary with a plain ad-hoc signature on macOS.
+ *
+ * The bundled Go binary ships "linker-signed" ad-hoc (the Go linker signs it).
+ * `codesign --verify` accepts that, but AMFI rejects it at launch on Apple
+ * Silicon Macs running the Code Signing Monitor (newer macOS), killing the
+ * process with SIGKILL ("Code Signature Invalid") before it runs an
+ * instruction. Replacing it with a regular ad-hoc signature makes it runnable.
+ *
+ * Best-effort: a no-op off macOS, and harmless where the original signature
+ * already ran. `codesign --force` replaces the existing signature atomically.
+ */
+async function resignAdHoc(binary: string): Promise<void> {
+  if (process.platform !== 'darwin') return;
+  try {
+    await execFileP('codesign', ['--force', '--sign', '-', binary]);
+  } catch {
+    /* codesign unavailable or failed — leave the copied binary as-is */
+  }
 }
