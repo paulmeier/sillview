@@ -1,0 +1,2405 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Sillview is a macOS desktop dashboard for the kasas financial ledger. Build dashboards from a marketplace of widgets and arrange them on a draggable grid, over a kasas backend that Sillview bundles, manages, and keeps up to date for you.">
+      
+      
+        <meta name="author" content="Paul Meier">
+      
+      
+        <link rel="canonical" href="https://paulmeier.github.io/sillview/architecture/decisions/0004-external-market-data-ownership-and-storage/">
+      
+      
+        <link rel="prev" href="../0003-third-party-code-widget-sandboxing/">
+      
+      
+        <link rel="next" href="../../../features/dashboards/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>ADR-0004 · External market data - Sillview</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adr-0004-external-market-data-ownership-storage-and-access" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="Sillview" class="md-header__button md-logo" aria-label="Sillview" data-md-component="logo">
+      
+  <img src="../../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Sillview
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADR-0004 · External market data
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/paulmeier/sillview" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    paulmeier/sillview
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../getting-started/quick-start/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../overview/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../features/dashboards/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../development/workflow/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Development
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="Sillview" class="md-nav__button md-logo" aria-label="Sillview" data-md-component="logo">
+      
+  <img src="../../../assets/logo.svg" alt="logo">
+
+    </a>
+    Sillview
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/paulmeier/sillview" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    paulmeier/sillview
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/settings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Settings & Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting-started/mock-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Offline Mock Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../managed-backend/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Managed kasas Backend
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../kasas-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    kasas Integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_4" id="__nav_3_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Decisions (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0001-user-created-widgets-tiered-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0001 · User-created widgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0002-backend-capability-detection-and-plugin-activation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0002 · Backend capability & activation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0003-third-party-code-widget-sandboxing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0003 · Code-widget sandboxing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004 · External market data
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-0004 · External market data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context-and-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context and problem statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision drivers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#considered-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Considered options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Considered options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-sillview-owns-it-main-process-adapter-local-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option A — Sillview owns it (main-process adapter + local store)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-a-kasas-plugin-fetches-it-netfetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option B — A kasas plugin fetches it (net:fetch)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-c-kasas-owns-it-as-a-first-class-subsystem-chosen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option C — kasas owns it as a first-class subsystem (chosen)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Option C — kasas owns it as a first-class subsystem (chosen)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#storage-sub-decision-separate-sqlite-file-vs-separate-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage sub-decision: separate SQLite file vs separate namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-outcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision outcome
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detailed design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Detailed design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kasas-schema-illustrative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        kasas: schema (illustrative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kasas-the-market-source-read-through-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        kasas: the market source (read-through cache)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kasas-api-read-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        kasas: API (read tier)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sillview-comparison-widgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sillview: comparison widgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#devils-advocate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Devil's advocate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative-risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative / risks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#follow-up-adrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow-up ADRs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/dashboards/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dashboards & Widgets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/widgets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Widget Catalog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/background-mode/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Background Mode
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../features/updates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backend Updates
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../development/workflow/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../development/building-a-widget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building a Widget
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../development/releases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Releases & CI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context-and-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context and problem statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-drivers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision drivers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#considered-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Considered options
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Considered options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-sillview-owns-it-main-process-adapter-local-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option A — Sillview owns it (main-process adapter + local store)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-a-kasas-plugin-fetches-it-netfetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option B — A kasas plugin fetches it (net:fetch)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-c-kasas-owns-it-as-a-first-class-subsystem-chosen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Option C — kasas owns it as a first-class subsystem (chosen)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Option C — kasas owns it as a first-class subsystem (chosen)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#storage-sub-decision-separate-sqlite-file-vs-separate-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Storage sub-decision: separate SQLite file vs separate namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision-outcome" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision outcome
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Detailed design
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Detailed design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kasas-schema-illustrative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        kasas: schema (illustrative)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kasas-the-market-source-read-through-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        kasas: the market source (read-through cache)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kasas-api-read-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        kasas: API (read tier)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sillview-comparison-widgets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sillview: comparison widgets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#devils-advocate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Devil's advocate
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative-risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative / risks
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implementation plan
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#follow-up-adrs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow-up ADRs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="adr-0004-external-market-data-ownership-storage-and-access">ADR-0004: External market data — ownership, storage, and access<a class="headerlink" href="#adr-0004-external-market-data-ownership-storage-and-access" title="Permanent link">&para;</a></h1>
+<ul>
+<li><strong>Status:</strong> Accepted (Phase 1–2 implemented — kasas <code>market_*</code> read-through cache</li>
+<li>Alpha Vantage; sillview Benchmark Comparison &amp; Market Series widgets, provider
+  settings, capability gating, and mock coverage)</li>
+<li><strong>Date:</strong> 2026-06-12</li>
+<li><strong>Deciders:</strong> Paul Meier</li>
+<li><strong>Related:</strong> <a href="../0001-user-created-widgets-tiered-model/">ADR-0001</a> ·
+  <a href="../0002-backend-capability-detection-and-plugin-activation/">ADR-0002</a> ·
+  <a href="../../kasas-integration/#the-cors-broker">kasas Integration → The CORS broker</a> ·
+  <a href="../../../features/widgets/">Widget Catalog</a> ·
+  <a href="https://paulmeier.github.io/kasas/architecture/decisions/0006-external-market-reference-data/">kasas ADR 0006</a>
+  (the backend half of this decision, in kasas's own ADR log — each repo numbers
+  its own; lands with kasas PR #125)</li>
+</ul>
+<blockquote>
+<p><strong>Update (2026-06-12):</strong> the provider settings UI moved out of the Settings
+dialog onto the <strong>Sources</strong> page. Market data is now a source card alongside
+SimpleFIN/Plaid/Teller, and every source opens a detail page (<code>/sources/:type</code>)
+holding its credentials and config — for market, the API key (a single
+credential, through the same form as a bank token) plus the series manager. The
+decision below is otherwise unchanged: keys and cache stay server-side via
+kasas's admin-tier source-credential routes. References to "Settings → Kasas →
+Market" below are superseded by this.</p>
+</blockquote>
+<h2 id="context-and-problem-statement">Context and problem statement<a class="headerlink" href="#context-and-problem-statement" title="Permanent link">&para;</a></h2>
+<p>The motivating user story: <em>"How is my mutual fund doing compared to the S&amp;P 500?"</em>
+Answering it requires data that is not — and never will be — in the user's ledger:
+benchmark index levels, fund NAVs, FX rates. Call this <strong>external market/reference
+data</strong>: time series about the <em>world</em>, as opposed to the ledger's facts about <em>your
+money</em>.</p>
+<p>Today neither side of the system has any of it:</p>
+<ul>
+<li><strong>kasas</strong> stores organizations, accounts, transactions, labels, extensions, and
+  relationships — and nothing else. There is no prices table, no securities/ticker
+  model, no FX, no valuation. Amounts are exact decimal strings; each account has a
+  single <code>currency</code> code and a single latest <code>balance</code> + <code>balance_date</code>
+  (<code>migrations/sqlite/00001_init.sql</code>).</li>
+<li><strong>Sillview</strong> is deliberately thin: a display layer whose renderer can only reach
+  kasas through the main-process CORS broker
+  (<a href="../../kasas-integration/#the-cors-broker">kasas Integration</a>). It fetches nothing
+  else and stores only dashboards locally.</li>
+</ul>
+<p>Meanwhile kasas already owns a complete <em>ingestion</em> machine: a <code>source.Source</code> /
+<code>Puller</code> interface with six pull sources (SimpleFIN, Teller, Plaid, Bitcoin,
+Ethereum, CSV), a gocron-driven poller with cursors and a serialized sync, a
+<code>sync_log</code>, an event stream, and per-source runtime credentials
+(<code>internal/source/source.go</code>, <code>internal/poller/poller.go</code>). Its <code>Archetype</code> enum
+already reserves slots beyond <code>pull</code> — <code>file</code>, <code>webhook</code>, <code>manual</code>, <code>enrichment</code> —
+with a comment that new archetype interfaces "will be added as those archetypes are
+built."</p>
+<p>Three questions need one coherent answer:</p>
+<ol>
+<li><strong>Who owns external data — kasas or Sillview?</strong></li>
+<li><strong>Where does it live?</strong> (The proposal on the table: a second SQLite database,
+   independent of the ledger.)</li>
+<li><strong>How do widgets mesh it with ledger data?</strong></li>
+</ol>
+<h2 id="decision-drivers">Decision drivers<a class="headerlink" href="#decision-drivers" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>One source of truth, many consumers.</strong> kasas is a headless service with other
+  clients than Sillview (API keys, webhooks, rules, plugins). Data only Sillview can
+  see is data the rest of the system can't react to.</li>
+<li><strong>The CORS broker is the security model.</strong> The renderer has no network; everything
+  flows through <code>window.api.kasas.request()</code>. <a href="../0001-user-created-widgets-tiered-model/">ADR-0001</a>'s
+  entire Tier 1–2 safety story rests on user specs being pinned to <em>kasas paths,
+  never a host</em>. Any design that puts market data behind a non-kasas API forces a
+  second datasource type into the spec model and erodes that invariant.</li>
+<li><strong>Ledger purity.</strong> The ledger is exact, sourced facts about the user's money.
+  World data is a <em>rebuildable cache</em> — different provenance, different retention,
+  different blast radius. The design must keep them separable even if co-located.</li>
+<li><strong>Decimal-string discipline.</strong> kasas never floats money; index levels and NAVs get
+  the same treatment (a price is money per unit).</li>
+<li><strong>Licensing reality.</strong> Market data is licensed IP. Personal use of fetched data is
+  one thing; <em>redistribution</em> is almost universally prohibited (see
+  <a href="#devils-advocate">Devil's advocate</a>).</li>
+<li><strong>"Very vanilla."</strong> Prefer extending existing, conventional machinery (sources,
+  poller, migrations, read-tier REST) over inventing parallel infrastructure.</li>
+<li><strong>Offline dev must keep working.</strong> New endpoints need <code>KASAS_MOCK=1</code> coverage.</li>
+</ul>
+<h2 id="considered-options">Considered options<a class="headerlink" href="#considered-options" title="Permanent link">&para;</a></h2>
+<h3 id="option-a-sillview-owns-it-main-process-adapter-local-store">Option A — Sillview owns it (main-process adapter + local store)<a class="headerlink" href="#option-a-sillview-owns-it-main-process-adapter-local-store" title="Permanent link">&para;</a></h3>
+<p>Fetch quotes in the Electron main process and persist them beside <code>dashboards.json</code>
+(e.g. a <code>market.db</code> in <code>userData</code>). This is the route
+<a href="../0002-backend-capability-detection-and-plugin-activation/#two-plugin-kinds">ADR-0002's kind (b)</a>
+sketched — it even names "an FX rate, a quote" as examples.</p>
+<ul>
+<li><strong>Good:</strong> fastest to ship — TypeScript only, no cross-repo coordination, no kasas
+  release. The egress-allowlist model is already designed in ADR-0002.</li>
+<li><strong>Bad:</strong> the data is trapped in the display layer. Headless kasas consumers,
+  plugins, webhooks, and rules can never see it. Sillview grows a second ingestion
+  engine (scheduler, retry, cursors, credential storage) duplicating what kasas
+  already has in Go. The "one deliberate hole" in the broker boundary becomes a
+  load-bearing data plane rather than a rare exception. Worst: ADR-0001's
+  query-builder specs are pinned to kasas paths — benchmark data behind a Sillview
+  API means either specs can't use it or the spec model grows a second datasource
+  kind, contaminating the declarative ladder's security story.</li>
+</ul>
+<h3 id="option-b-a-kasas-plugin-fetches-it-netfetch">Option B — A kasas plugin fetches it (<code>net:fetch</code>)<a class="headerlink" href="#option-b-a-kasas-plugin-fetches-it-netfetch" title="Permanent link">&para;</a></h3>
+<p>Use the existing plugin system: a marketplace plugin pulls prices (per-host egress
+grants already exist, <code>00016_add_plugin_net_grants.sql</code>) on <code>OnSyncComplete</code>.</p>
+<ul>
+<li><strong>Good:</strong> zero core changes; the kasas-plugins registry is a ready distribution
+  channel; egress is already capability-gated per host.</li>
+<li><strong>Bad:</strong> plugins have nowhere to <em>put</em> a time series. Their write capabilities are
+  <code>labels:write</code> / <code>extensions:write</code> — both attach to transactions. Stuffing daily
+  index closes into transaction extensions is an abuse of the data model, and plugin
+  pages render HTML, not queryable series, so widgets couldn't read the result
+  cleanly. Making this work means adding plugin-owned storage plus custom data
+  endpoints to the SDK — real core work that converges on Option C with extra
+  indirection. Revisit if/when the plugin SDK grows durable storage.</li>
+</ul>
+<h3 id="option-c-kasas-owns-it-as-a-first-class-subsystem-chosen">Option C — kasas owns it as a first-class subsystem <em>(chosen)</em><a class="headerlink" href="#option-c-kasas-owns-it-as-a-first-class-subsystem-chosen" title="Permanent link">&para;</a></h3>
+<p>A new <strong>market source</strong> (a new source archetype alongside <code>pull</code>), storing series
+into a dedicated <code>market_*</code> namespace, served by new read-tier endpoints. Sillview
+consumes it through the existing broker like any other kasas data.</p>
+<ul>
+<li><strong>Good:</strong> reuses the poller, cursors, sync_log, events, and credential machinery
+  that already exist; every consumer (Sillview, specs, plugins, webhooks, API users)
+  sees the same data; the broker boundary stays intact and ADR-0001's "fixed kasas
+  endpoint enumeration" simply grows two entries.</li>
+<li><strong>Bad:</strong> scope creep for a ledger — kasas takes on provider churn, API quotas, and
+  key UX forever. Nothing ships until a kasas release lands and Sillview's bundled
+  binary updates. Slower first pixel than Option A.</li>
+</ul>
+<h4 id="storage-sub-decision-separate-sqlite-file-vs-separate-namespace">Storage sub-decision: separate SQLite file vs separate namespace<a class="headerlink" href="#storage-sub-decision-separate-sqlite-file-vs-separate-namespace" title="Permanent link">&para;</a></h4>
+<p>The original proposal was a <strong>second SQLite database</strong> independent of the ledger.
+Evaluated honestly:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>C1 · separate <code>market.db</code> file</th>
+<th>C2 · same DB, <code>market_*</code> tables <em>(chosen)</em></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ledger purity</td>
+<td>physical — strongest</td>
+<td>logical — by contract (no FKs, wipe command)</td>
+</tr>
+<tr>
+<td>Wipe/rebuild</td>
+<td>delete the file</td>
+<td><code>kasas market reset</code> truncates the namespace</td>
+</tr>
+<tr>
+<td>sqlite ↔ Postgres parity</td>
+<td><strong>broken</strong> — Postgres deployments need a second database or a sqlite sidecar</td>
+<td>identical on both dialects (Postgres: same tables, optional schema)</td>
+</tr>
+<tr>
+<td>Plumbing</td>
+<td>second <code>store.go</code>, second migration chain, second connection</td>
+<td>one migration chain, additive files</td>
+</tr>
+<tr>
+<td>Cross-source queries</td>
+<td><code>ATTACH</code> (sqlite-only) or app-level</td>
+<td>app-level joins (the plan anyway)</td>
+</tr>
+<tr>
+<td>Data volume</td>
+<td>a daily series is ~252 rows/year — tiny either way</td>
+<td>same</td>
+</tr>
+</tbody>
+</table>
+<p>The independence the separate file buys is real but achievable by <strong>contract</strong> at a
+fraction of the plumbing: market tables carry no foreign keys into ledger tables,
+are excluded from data exports by default, and are rebuildable from provider +
+symbol + date range alone. The separate file's one decisive advantage (physical
+purity) doesn't outweigh breaking the dual-dialect store abstraction. <strong>Choose C2</strong>,
+and record C1 as the fallback if the cache ever grows write patterns that measurably
+hurt the ledger DB (WAL churn, backup time).</p>
+<h2 id="decision-outcome">Decision outcome<a class="headerlink" href="#decision-outcome" title="Permanent link">&para;</a></h2>
+<p><strong>Adopt Option C with storage C2.</strong> kasas owns fetching, caching, and serving of
+external market/reference data — <strong>on demand, through a server-side read-through
+cache with a TTL</strong> (amended from this ADR's original scheduled-copy model: copies
+go stale and accrue backfill obligations; a demand-driven cache self-heals and
+burns quota only when someone is actually looking); Sillview owns visualization
+and comparison math.</p>
+<pre class="mermaid"><code>flowchart LR
+    P["market provider&lt;br/&gt;(server-side key)"] --&gt;|"fetch on demand · TTL"| S["kasas market source&lt;br/&gt;(read-through cache)"]
+    S --&gt; M[("market_* tables&lt;br/&gt;TTL cache · no FKs")]
+    L[("ledger tables")] -." same DB, separate namespace ".- M
+    M --&gt; API["GET /api/v1/market/…&lt;br/&gt;read tier"]
+    API --&gt;|existing CORS broker| W["Sillview comparison widgets&lt;br/&gt;normalize + chart"]</code></pre>
+<p>This <strong>narrows ADR-0002's kind (b)</strong>: market/reference data used for analysis must
+come through kasas. Kind (b) main-side adapters remain for capabilities that
+genuinely cannot live in the backend, but "an FX rate, a quote" is no longer the
+canonical example — it is exactly what this ADR routes through kasas instead.</p>
+<p>Because the decision spans two repos, it is recorded twice with a clear split of
+authority:
+<a href="https://paulmeier.github.io/kasas/architecture/decisions/0006-external-market-reference-data/"><strong>kasas ADR 0006</strong></a>
+is the <strong>canonical record for the backend design</strong> (the fetch/caching model,
+source archetype, <code>market_*</code> schema, API routes, provider model); <em>this</em> ADR is
+canonical for the
+Sillview-side consequences — broker-only consumption, the kind (b) narrowing,
+widgets, and mock coverage. The backend sketches below are context, not the
+contract; if they drift, kasas ADR 0006 wins.</p>
+<h2 id="detailed-design">Detailed design<a class="headerlink" href="#detailed-design" title="Permanent link">&para;</a></h2>
+<h3 id="kasas-schema-illustrative">kasas: schema (illustrative)<a class="headerlink" href="#kasas-schema-illustrative" title="Permanent link">&para;</a></h3>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">-- World facts, not ledger facts: a rebuildable cache. No FKs into ledger tables.</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">market_series</span><span class="w"> </span><span class="p">(</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="n">id</span><span class="w">        </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">   </span><span class="c1">-- stable internal id, e.g. &quot;sp500tr&quot;</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="n">provider</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">      </span><span class="c1">-- e.g. &quot;stooq&quot; — provider choice is ADR-0005</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="n">symbol</span><span class="w">    </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">      </span><span class="c1">-- provider-native symbol</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">    </span><span class="n">kind</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">      </span><span class="c1">-- index | fund | equity | fx | crypto</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">    </span><span class="n">currency</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">      </span><span class="c1">-- ISO code values are quoted in</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="n">adjusted</span><span class="w">  </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">   </span><span class="c1">-- 1 = total-return / split-adjusted series</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="n">meta</span><span class="w">      </span><span class="nb">TEXT</span><span class="w">                </span><span class="c1">-- JSON: display name, license note, …</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">);</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">market_points</span><span class="w"> </span><span class="p">(</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="n">series_id</span><span class="w">  </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nb">date</span><span class="w">       </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">     </span><span class="c1">-- ISO-8601 date; daily close granularity</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="n">value</span><span class="w">      </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">     </span><span class="c1">-- decimal STRING — same discipline as money</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="n">fetched_at</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">series_id</span><span class="p">,</span><span class="w"> </span><span class="nb">date</span><span class="p">)</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="p">);</span>
+</span></code></pre></div>
+<p>Daily closes only. Intraday is an explicit <strong>non-goal</strong>: it multiplies quota cost,
+storage, and provider complexity for a personal-finance dashboard that compares
+months, not minutes.</p>
+<h3 id="kasas-the-market-source-read-through-cache">kasas: the market source (read-through cache)<a class="headerlink" href="#kasas-the-market-source-read-through-cache" title="Permanent link">&para;</a></h3>
+<p>The fetch model is <strong>on demand</strong>, not a scheduled copy — recorded canonically in
+kasas ADR 0006; the shape in brief:</p>
+<ul>
+<li>The <strong>API read path is the trigger</strong>: fresh cache → serve; stale → serve
+  immediately and refresh in the background (<em>stale-while-revalidate</em>), then emit
+  a <code>market.updated</code> event that the widgets' existing event subscription picks
+  up; cold → one synchronous fetch under a timeout.</li>
+<li><strong>Single-flight and per-provider rate limiting live at the server</strong> —
+  concurrent requests for the same series collapse to one provider call, and
+  quotas are enforced where they are actually shared.</li>
+<li><code>fetched_at</code> in the schema above is load-bearing: freshness is a read-time TTL
+  policy (a daily series is stale once a newer close should exist). Refreshes
+  upsert the viewed window, which also self-heals retroactive restatements of
+  adjusted series — something the scheduled-copy model would have needed
+  detection logic for.</li>
+<li>Still a registered source (new <code>reference</code> archetype): it inherits source
+  config, runtime credentials (never <code>config.toml</code>), readiness reporting, and
+  the generic <code>POST /api/v1/sources/{type}/sync</code> — which now means <em>warm the
+  cache</em>, an optional convenience rather than the primary path. The provider
+  sits behind a small interface so the first pick (ADR-0005) isn't load-bearing.</li>
+</ul>
+<h3 id="kasas-api-read-tier">kasas: API (read tier)<a class="headerlink" href="#kasas-api-read-tier" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>GET /api/v1/market/series</code> → <code>{ "series": [ … ] }</code> (named-key wrapping, per
+  convention)</li>
+<li><code>GET /api/v1/market/series/{id}/points?since=…&amp;until=…</code> → <code>{ "points": [ … ] }</code></li>
+</ul>
+<p>Both readable with the dashboard token, like other read-tier routes.</p>
+<h3 id="sillview-comparison-widgets">Sillview: comparison widgets<a class="headerlink" href="#sillview-comparison-widgets" title="Permanent link">&para;</a></h3>
+<ul>
+<li>A <strong>Benchmark comparison</strong> widget: pick an account + a series; render "growth of
+  $10k" — both lines normalized to 100 at the window start. Pure broker traffic
+  (<code>kasas.request({ path: '/api/v1/market/…' })</code>): <strong>no new IPC, no new trust
+  surface, no renderer egress.</strong></li>
+<li>Chart copy must be honest: label the series as <em>price</em> vs <em>total-return</em>, and the
+  account line as <em>balance</em> (which includes deposits) — see Devil's advocate.</li>
+<li><strong>Settings are the config surface; the engine stays remote-safe.</strong> Provider
+  toggles and API-key entry live in the existing Settings dialog and flow through
+  kasas's <strong>admin-tier</strong> source-credential routes — the same path bank credentials
+  use. This works identically for the bundled backend and a <strong>remote kasas</strong>: keys
+  and cache live with the server, every connected dashboard shares one cache and
+  one provider quota, and a connection holding only a read-only API key sees
+  provider settings as read-only (it can chart series, not reconfigure them).</li>
+<li><strong>Capability-gate the widget (ADR-0002).</strong> A remote kasas may predate
+  <code>/api/v1/market/*</code>; the widget declares the requirement and degrades to the
+  actionable "requires kasas ≥ vX" tile, never a broken chart.</li>
+<li><strong>ADR-0001 synergy:</strong> the market endpoints join the fixed kasas endpoint
+  enumeration, so Tier-1 query-builder specs gain benchmarks with zero changes to
+  the spec security model.</li>
+<li><strong>Mock mode:</strong> <code>mock.ts</code> grows <code>/api/v1/market/*</code> routes serving a seeded
+  synthetic series generated relative to <code>now</code> (same pattern as existing fixtures).</li>
+</ul>
+<h2 id="devils-advocate">Devil's advocate<a class="headerlink" href="#devils-advocate" title="Permanent link">&para;</a></h2>
+<p>The case against — recorded so we walk in clear-eyed.</p>
+<ul>
+<li><strong>The comparison the user actually asked for cannot be computed honestly yet.</strong>
+  An investment account's value moves with the market <em>between</em> syncs with no
+  transaction; kasas keeps only the <strong>latest</strong> balance. A historical account-value
+  series cannot be reconstructed from transactions, so "my fund vs the S&amp;P" is, in
+  phase 1, <em>a benchmark overlay for context</em> — not performance attribution. Honest
+  time-weighted comparison needs balance snapshots (follow-up ADR-0006). Shipping a
+  chart that implies more is worse than no chart.</li>
+<li><strong>Naive overlays mislead by construction, twice.</strong> (1) The S&amp;P 500 most people
+  quote (SPX) is a <em>price</em> index; a fund balance includes reinvested dividends.
+  Comparing them flatters the fund by ~2%/yr compounded — prefer total-return
+  series (<code>adjusted</code> exists in the schema for this reason) and label which is
+  shown. (2) Account balances grow with <em>deposits</em>; an account receiving monthly
+  contributions "beats" any index. Without flow-adjusted math (ADR-0007) the
+  widget must say "balance", never "return".</li>
+<li><strong>Licensing is a minefield.</strong> Index levels are licensed IP (S&amp;P DJI); most
+  providers' terms prohibit redistribution even of "free" data; unofficial Yahoo
+  endpoints violate ToS outright. Fetched data is for the user's own display and
+  analysis — never redistributed — and per-provider attribution requirements have
+  to be honored in the chart copy.</li>
+<li><strong>Provider risk is permanent ops burden.</strong> Free tiers are tight
+  (Alpha Vantage: ~25 req/day) and providers die (IEX Cloud, 2024). Users must
+  bring their own key for anything beyond a keyless default; quotas, backoff, and
+  provider migration (symbol remapping across providers) are forever-costs kasas
+  is signing up for. Mitigation: provider-agnostic interface, stable internal
+  series ids, daily granularity.</li>
+<li><strong>Scope creep.</strong> kasas's identity is "exact facts from your institutions." This
+  ADR makes it also a (small) market-data platform. The fence: kasas stores
+  <em>series the user configured</em>, full stop — no securities master, no symbol
+  search, no fundamentals, no intraday. Each of those would need a new ADR on
+  purpose.</li>
+<li><strong>Cross-repo latency.</strong> Option A would demo in a weekend; Option C needs a kasas
+  release plus a Sillview bundled-binary update before the first pixel. Accepted:
+  this is infrastructure, and the self-update path already exists.</li>
+<li><strong>A second egress class.</strong> kasas already calls banks; now it also calls market
+  providers — new hosts in the user's threat model (the only leak is ticker
+  interest, but it should be visible/allowlisted like plugin <code>net:fetch</code> grants,
+  not silent).</li>
+</ul>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<h3 id="positive">Positive<a class="headerlink" href="#positive" title="Permanent link">&para;</a></h3>
+<ul>
+<li>One copy of the data, visible to every consumer: widgets, query-builder specs,
+  plugins, webhooks, rules, and headless API users.</li>
+<li>Sillview's security model is untouched — the renderer still reaches exactly one
+  host through one broker, and ADR-0001's spec invariant ("a path, never a host")
+  survives unchanged.</li>
+<li>Reuses kasas's ingestion machinery nearly wholesale; the ledger stays pure via
+  the no-FK, rebuildable-cache contract.</li>
+<li>Valuation (BTC→USD, EUR→USD) becomes a natural future client of the same tables
+  (ADR-0008) instead of a separate system.</li>
+</ul>
+<h3 id="negative-risks">Negative / risks<a class="headerlink" href="#negative-risks" title="Permanent link">&para;</a></h3>
+<ul>
+<li>kasas permanently owns provider churn, quotas, and key UX (mitigations above).</li>
+<li>The migration chain now carries non-ledger tables; market migrations must stay
+  additive and isolated so a bad one can't threaten ledger data.</li>
+<li>The first user-visible comparison is honest-but-modest (overlay, not attribution)
+  until ADR-0006/0007 land — expectation management in the widget copy is part of
+  the deliverable.</li>
+<li><strong>Cold-cache latency:</strong> the first view of a never-fetched series blocks on a
+  server-side provider round-trip; subsequent reads are cache-instant
+  (stale-while-revalidate). Widgets must treat it as ordinary loading, not error.</li>
+<li>Mock mode grows synthetic-series maintenance.</li>
+</ul>
+<h2 id="implementation-plan">Implementation plan<a class="headerlink" href="#implementation-plan" title="Permanent link">&para;</a></h2>
+<ul class="task-list">
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Phase 1 (kasas):</strong> <code>market_*</code> cache migrations + store methods;
+      demand-driven read-through fetch (TTL, single-flight, stale-while-revalidate<ul>
+<li><code>market.updated</code> event) behind a provider interface; optional cache-warm
+  via the generic per-source sync; <code>GET /api/v1/market/*</code> read routes;
+  <code>kasas market reset</code>. <em>(Alpha Vantage provider; verified end-to-end.)</em></li>
+</ul>
+</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Phase 2 (Sillview):</strong> Benchmark-comparison widget + Market Series widget
+      through the existing broker; provider settings UI (Settings → Kasas → Market,
+      admin-tier; read-only for API-key connections); ADR-0002 capability gating
+      (<code>useMarketAvailable</code>) for backends without <code>/api/v1/market/*</code>; honest
+      labeling (price vs total-return, "balance ≠ return"); <code>KASAS_MOCK</code> routes for
+      <code>/api/v1/market/*</code>.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Phase 3:</strong> add the market endpoints to ADR-0001's Tier-1 fixed endpoint
+      enumeration so query-builder specs can chart benchmarks.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Phase 4+:</strong> governed by the follow-up ADRs below — notably balance
+      snapshots (ADR-0006) before any chart says "return".</li>
+</ul>
+<h2 id="follow-up-adrs">Follow-up ADRs<a class="headerlink" href="#follow-up-adrs" title="Permanent link">&para;</a></h2>
+<p>Each is a separable decision deliberately <em>not</em> made here:</p>
+<ul>
+<li><strong>ADR-0005 · Market-data provider selection, credentials &amp; licensing</strong> — which
+  provider(s) ship first (keyless default vs bring-your-own-key), quota/backoff
+  policy, ToS review per provider, symbol-mapping strategy across providers. A
+  candidate matrix (Alpha Vantage, Finnhub, Market Data, Alpaca, MarketStack,
+  plus Tiingo/Stooq/FRED) and two constraining findings — the S&amp;P 500 index
+  level is licensed IP free tiers often won't serve (ETF or FRED proxy), and
+  mutual-fund NAV coverage varies sharply — are recorded in kasas ADR 0006.</li>
+<li><strong>ADR-0006 · Account balance history (snapshots)</strong> — record per-account balance
+  at each sync into a history table; the prerequisite for any honest performance
+  chart. Possibly extends to a holdings/positions/units model for brokerage
+  accounts (units × NAV beats balance snapshots when available).</li>
+<li><strong>ADR-0007 · Performance &amp; benchmark methodology</strong> — time-weighted vs
+  money-weighted return, total-return vs price indices, normalization windows,
+  contribution handling; the math that turns "overlay" into "comparison".</li>
+<li><strong>ADR-0008 · Valuation &amp; currency conversion</strong> — FX/crypto series from the same
+  <code>market_*</code> infrastructure powering a base-currency view of multi-currency
+  net worth; where conversion is computed (kasas vs widget) and how it is labeled.</li>
+</ul>
+<h2 id="open-questions">Open questions<a class="headerlink" href="#open-questions" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Which provider first, and is there a keyless default</strong> so the feature works
+   out-of-the-box? (Decided in ADR-0005; the provider interface here must not
+   prejudge it.)</li>
+<li><strong>Should ADR-0006 (balance snapshots) land before Phase 2</strong> so the first
+   shipped widget can show a real value-over-time line instead of overlay-only?
+   The snapshot table is cheap; the argument for sequencing it first is strong.</li>
+<li><strong>Series identity:</strong> are internal ids (<code>sp500tr</code>) minted by kasas with
+   provider-symbol mapping in <code>meta</code>, or are provider symbols the id? Affects
+   provider migration later; lean internal-id.</li>
+<li><strong>Export/backup posture:</strong> confirmed that <code>market_*</code> is excluded from data
+   exports by default, or should it be opt-in?</li>
+</ol>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://paulmeier.github.io/kasas/architecture/decisions/0006-external-market-reference-data/">kasas ADR 0006 — External market &amp; reference data as a first-class source</a>
+  — the canonical backend record of this decision.</li>
+<li>kasas ingestion: <code>internal/source/source.go</code>, <code>internal/poller/poller.go</code>
+  (source archetypes, pull/cursor model, sync scheduling).</li>
+<li>kasas schema: <code>migrations/sqlite/00001_init.sql</code> (accounts hold one latest
+  balance — the snapshot gap), <code>00016_add_plugin_net_grants.sql</code> (per-host egress
+  grants pattern).</li>
+<li><a href="../0001-user-created-widgets-tiered-model/">ADR-0001</a> — the fixed-endpoint
+  datasource model that market endpoints slot into.</li>
+<li><a href="../0002-backend-capability-detection-and-plugin-activation/">ADR-0002</a> — kind (b)
+  external egress, which this ADR narrows.</li>
+<li><a href="../../kasas-integration/#the-cors-broker">kasas Integration → The CORS broker</a>.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../0003-third-party-code-widget-sandboxing/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-0003 · Code-widget sandboxing">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                ADR-0003 · Code-widget sandboxing
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../../features/dashboards/" class="md-footer__link md-footer__link--next" aria-label="Next: Dashboards &amp; Widgets">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Dashboards & Widgets
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Paul Meier — released under the MIT License
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/paulmeier/sillview" target="_blank" rel="noopener" title="Sillview on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://github.com/paulmeier/sillview/releases" target="_blank" rel="noopener" title="Download Sillview" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5 20h14v-2H5m14-9h-4V3H9v6H5l7 7z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.top", "navigation.indexes", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tooltips"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

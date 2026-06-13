@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Sillview">
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="#4338ca"/>
+  <!-- ascending bars — legible down to favicon size -->
+  <g fill="#ffffff">
+    <rect x="34" y="64" width="13" height="30" rx="3"/>
+    <rect x="57" y="50" width="13" height="44" rx="3"/>
+    <rect x="80" y="36" width="13" height="58" rx="3"/>
+  </g>
+</svg>
