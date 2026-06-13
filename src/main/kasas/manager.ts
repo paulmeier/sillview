@@ -185,6 +185,21 @@ export class KasasManager {
   }
 
   private async waitForReady(): Promise<void> {
+    // Daemon self-heal: in background mode the app only polls — it doesn't own
+    // the process. If the daemon (LaunchAgent / systemd unit) gets unloaded out
+    // from under us — its definition survives on disk but it's no longer loaded
+    // — it stops responding, and we'd otherwise just report "not reachable"
+    // forever. Reload it before polling.
+    if (
+      this.state.settings.background &&
+      daemon.supported &&
+      daemon.isInstalled() &&
+      !(await daemon.isActive())
+    ) {
+      this.pushLog('stderr', 'daemon not loaded — reloading');
+      await daemon.reload().catch(() => undefined);
+    }
+
     const deadline = Date.now() + READY_TIMEOUT_MS;
     const url = `${this.baseUrl()}/readyz`;
     const runningState: KasasProcessState = this.state.settings.background ? 'daemon' : 'running';
