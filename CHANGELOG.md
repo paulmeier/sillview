@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/paulmeier/sillview/compare/v0.8.1...v0.9.0) (2026-06-13)
+
+
+### Features
+
+* support background mode on Linux via systemd user unit ([#43](https://github.com/paulmeier/sillview/issues/43)) ([fcc402f](https://github.com/paulmeier/sillview/commit/fcc402fbdfefda59ce1ab55b47a817703b39700a))
+
 ## [0.8.1](https://github.com/paulmeier/sillview/compare/v0.8.0...v0.8.1) (2026-06-13)
 
 
