@@ -11,6 +11,9 @@ import { app } from 'electron';
 import { existsSync, promises as fs } from 'node:fs';
 import path from 'node:path';
 
+/** The kasas executable's filename — `.exe` on Windows, bare elsewhere. */
+const BINARY_NAME = process.platform === 'win32' ? 'kasas.exe' : 'kasas';
+
 export function kasasDataDir(): string {
   return path.join(app.getPath('userData'), 'kasas');
 }
@@ -27,14 +30,14 @@ export function kasasLogDir(): string {
   return path.join(kasasDataDir(), 'logs');
 }
 export function managedBinaryPath(): string {
-  return path.join(kasasDataDir(), 'bin', 'kasas');
+  return path.join(kasasDataDir(), 'bin', BINARY_NAME);
 }
 
 /** Where the bundled kasas binary ships (dev vs packaged). */
 export function bundledBinaryPath(): string {
   return app.isPackaged
-    ? path.join(process.resourcesPath, 'bin', 'kasas')
-    : path.join(app.getAppPath(), 'resources', 'bin', 'kasas');
+    ? path.join(process.resourcesPath, 'bin', BINARY_NAME)
+    : path.join(app.getAppPath(), 'resources', 'bin', BINARY_NAME);
 }
 
 export function bundledBinaryExists(): boolean {

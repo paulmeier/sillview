@@ -6,6 +6,7 @@
 
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import { promisify } from 'node:util';
 import type {
   KasasLogLine,
@@ -84,6 +85,7 @@ export class KasasManager {
       baseUrl: this.baseUrl(),
       dataDir: kasasDataDir(),
       binaryPresent: bundledBinaryExists(),
+      daemonSupported: launchAgent.supported,
       error: this.lastError,
     };
   }
@@ -122,7 +124,7 @@ export class KasasManager {
       return this.status();
     }
     // The background daemon owns the port — don't also spawn a child.
-    if (this.state.settings.background) {
+    if (this.state.settings.background && launchAgent.supported) {
       this.setState('daemon');
       void this.waitForReady();
       return this.status();
@@ -210,7 +212,13 @@ export class KasasManager {
   /** Kill any lingering managed-kasas process orphaned by a crash/force-quit. */
   private async killStaleManaged(binary: string): Promise<void> {
     try {
-      await execFileP('pkill', ['-f', binary]); // throws (exit 1) if nothing matched
+      if (process.platform === 'win32') {
+        // taskkill matches by image name only, not full path; the managed
+        // binary is the only kasas.exe we run, so this is precise enough.
+        await execFileP('taskkill', ['/F', '/IM', path.basename(binary)]);
+      } else {
+        await execFileP('pkill', ['-f', binary]); // throws (exit 1) if nothing matched
+      }
       await new Promise((r) => setTimeout(r, 1000)); // let the port free
     } catch {
       /* nothing was running */
@@ -281,6 +289,13 @@ export class KasasManager {
 
   /** Install/remove the persistent LaunchAgent and adjust the child accordingly. */
   async setBackground(enabled: boolean): Promise<KasasStatus> {
+    // The daemon is macOS-only (LaunchAgents). Off macOS, never persist a
+    // background=true that we can't honor — keep running as a managed child.
+    if (!launchAgent.supported) {
+      this.state.settings.background = false;
+      await saveBackendState(this.state);
+      return this.status();
+    }
     this.state.settings.background = enabled;
     await saveBackendState(this.state);
 

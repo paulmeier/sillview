@@ -80,6 +80,8 @@ export interface KasasStatus {
   baseUrl: string;
   dataDir: string;
   binaryPresent: boolean;
+  /** Whether the persistent background daemon is available (macOS only). */
+  daemonSupported: boolean;
   error?: string;
 }
 
