@@ -694,6 +694,38 @@ function marketSeriesList() {
   });
 }
 
+// --- Saved-dashboards fixture -----------------------------------------------
+// A seeded "Investments" board for mock mode that exercises the Market Data
+// source: a SPY-vs-AGG "growth of $10k" comparison chart next to a SPY benchmark
+// against the Brokerage account. Returned by loadDashboards()
+// on first run under KASAS_MOCK, in the same serialized shape the renderer's
+// persist store writes (see src/renderer/store/dashboards.ts), so it hydrates
+// and is then user-editable — saving overwrites the fixture with a real file.
+
+/** Serialized saved-dashboards store seeding the mock "Investments" board. */
+export function mockDashboardsFile(): string {
+  const dashboard = {
+    id: 'dash_investments',
+    name: 'Investments',
+    widgets: [
+      { id: 'mw_spy_series', type: 'market-series', config: { series: ['spy', 'agg'] } },
+      {
+        id: 'mw_spy_vs_brokerage',
+        type: 'benchmark-comparison',
+        config: { series: 'spy', account: 'acc_brokerage' },
+      },
+    ],
+    layout: [
+      { i: 'mw_spy_series', x: 0, y: 0, w: 7, h: 6, minW: 4, minH: 3 },
+      { i: 'mw_spy_vs_brokerage', x: 7, y: 0, w: 5, h: 6, minW: 4, minH: 4 },
+    ],
+  };
+  return JSON.stringify({
+    state: { dashboards: [dashboard], activeId: dashboard.id },
+    version: 0,
+  });
+}
+
 function route(req: KasasRequest): KasasResult {
   const { path, query } = req;
 
