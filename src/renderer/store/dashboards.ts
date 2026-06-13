@@ -1,8 +1,9 @@
 /**
  * Saved-dashboards store. Persisted through IPC to a JSON file in userData (see
  * main/storage/dashboards.ts) via Zustand's `persist` middleware with async
- * storage. A starter "Overview" dashboard is seeded once, after hydration, only
- * if nothing was loaded — so we never clobber a user's saved file.
+ * storage. A single empty "Overview" dashboard is seeded once, after hydration,
+ * only if nothing was loaded — so new users start with a clean slate they fill
+ * themselves (and we never clobber a saved file).
  */
 
 import { create } from 'zustand';
@@ -59,40 +60,9 @@ interface DashboardsState {
   finishHydration: () => void;
 }
 
-function place(
-  type: string,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  minW = 3,
-  minH = 2,
-): [WidgetInstance, GridItem] {
-  const id = uid();
-  return [
-    { id, type },
-    { i: id, x, y, w, h, minW, minH },
-  ];
-}
-
+/** A single empty dashboard so new users start with a canvas, not content. */
 function createStarterDashboard(): Dashboard {
-  // A curated 12-column starter arrangement showcasing each widget kind.
-  const entries: [WidgetInstance, GridItem][] = [
-    place('net-worth', 0, 0, 4, 3),
-    place('sync-status', 4, 0, 4, 3),
-    place('activity-feed', 8, 0, 4, 6),
-    place('cashflow', 0, 3, 8, 5),
-    place('spend-by-label', 0, 8, 4, 6, 3, 4),
-    place('account-balances', 4, 8, 4, 6, 3, 4),
-    place('accounts-list', 8, 6, 4, 8),
-    place('transactions', 0, 14, 12, 7, 4, 4),
-  ];
-  return {
-    id: uid(),
-    name: 'Overview',
-    widgets: entries.map((e) => e[0]),
-    layout: entries.map((e) => e[1]),
-  };
+  return { id: uid(), name: 'Overview', widgets: [], layout: [] };
 }
 
 /** Zustand StateStorage backed by the main-process dashboards file. */

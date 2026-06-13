@@ -55,8 +55,9 @@ Download the latest installer for your platform from the
 
 ## Features
 
-- **Custom dashboards** — arrange widgets on a draggable, resizable grid and save
-  as many dashboards as you like; they persist locally on your machine.
+- **Custom dashboards** — start from a clean slate, then arrange widgets on a
+  draggable, resizable grid and save as many dashboards as you like; they persist
+  locally on your machine.
 - **Widget marketplace** — browse a catalog by category (net worth, accounts, cash
   flow, spending, live activity) and drop widgets onto a dashboard.
 - **Managed backend** — Sillview ships the kasas binary, generates its config,
