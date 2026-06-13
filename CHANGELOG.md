@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/paulmeier/sillview/compare/v0.5.0...v0.6.0) (2026-06-13)
+
+
+### Features
+
+* overlay multiple market series as growth-of-$10k with per-series toggles ([#34](https://github.com/paulmeier/sillview/issues/34)) ([6aab9dd](https://github.com/paulmeier/sillview/commit/6aab9dd0f92b2d5acc109ee03b40a769fde8e07c))
+
 ## [0.5.0](https://github.com/paulmeier/sillview/compare/v0.4.0...v0.5.0) (2026-06-13)
 
 
