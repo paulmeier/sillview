@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/paulmeier/sillview/compare/v0.9.0...v0.9.1) (2026-06-13)
+
+
+### Bug Fixes
+
+* re-sign the kasas binary ad-hoc so it runs on Apple Silicon ([#45](https://github.com/paulmeier/sillview/issues/45)) ([9bd6eea](https://github.com/paulmeier/sillview/commit/9bd6eea77a708e691d461f5ff16f14726f11568c))
+
 ## [0.9.0](https://github.com/paulmeier/sillview/compare/v0.8.1...v0.9.0) (2026-06-13)
 
 
