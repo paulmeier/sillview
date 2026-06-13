@@ -735,6 +735,11 @@ function route(req: KasasRequest): KasasResult {
     return ok({ id: t.id, labels });
   }
   const txnId = path.match(/^\/api\/v1\/transactions\/([^/]+)$/);
+  if (txnId && req.method === 'GET') {
+    const t = transactions.find((x) => x.id === txnId[1]);
+    if (!t) return { ok: false, status: 404, error: 'mock: transaction not found' };
+    return ok(t);
+  }
   if (txnId && (req.method === 'PUT' || req.method === 'DELETE')) {
     const idx = transactions.findIndex((t) => t.id === txnId[1]);
     if (idx < 0) return { ok: false, status: 404, error: 'mock: transaction not found' };

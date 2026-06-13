@@ -270,6 +270,21 @@ export const kasas = {
 
   // --- Transaction detail: history / provenance / relationships -----------
 
+  /**
+   * Fetch one transaction by id. Resolves to `null` when the id is unknown
+   * (HTTP 404), so callers can tell a genuinely missing transaction apart from a
+   * transient failure — used to validate a manually-entered relationship target
+   * before submitting. Other failures reject as usual.
+   */
+  getTransaction: (id: string): Promise<Transaction | null> =>
+    request<Transaction>({
+      method: 'GET',
+      path: `/api/v1/transactions/${encodeURIComponent(id)}`,
+    }).catch((e) => {
+      if (e instanceof KasasError && e.status === 404) return null;
+      throw e;
+    }),
+
   transactionHistory: (id: string) =>
     request<TransactionHistory>({
       method: 'GET',

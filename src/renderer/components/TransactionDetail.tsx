@@ -11,7 +11,7 @@ import { kasas } from '../api/kasas';
 import { Modal } from './ui/Modal';
 import { Button, Pill, Spinner } from './ui';
 import { cx } from '../lib/utils';
-import { formatDateTime } from '../lib/time';
+import { formatDate, formatDateTime } from '../lib/time';
 import type {
   Provenance,
   RelationshipEdge,
@@ -131,12 +131,24 @@ function ProvenanceView({ id }: { id: string }) {
   );
 }
 
+/** Live validation of the manually-entered target id. */
+type TargetState = '' | 'found' | 'checking' | 'missing';
+
+/** Compact one-line confirmation of a resolved target: date · description · amount. */
+function txnSummary(t: Transaction): string {
+  return [formatDate(t.date), t.payee || t.description || t.id, t.amount]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 function RelationshipsView({ id, txns }: { id: string; txns: Transaction[] }) {
   const [edges, setEdges] = useState<RelationshipEdge[] | null>(null);
   const [kinds, setKinds] = useState<RelationshipKind[]>([]);
   const [error, setError] = useState<string>();
   const [kind, setKind] = useState('');
   const [target, setTarget] = useState('');
+  const [targetState, setTargetState] = useState<TargetState>('');
+  const [targetFound, setTargetFound] = useState<Transaction | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
@@ -149,12 +161,65 @@ function RelationshipsView({ id, txns }: { id: string; txns: Transaction[] }) {
   }, [id]);
   useEffect(load, [load]);
 
+  // Resolve the typed target id: instantly if it's in the loaded set, otherwise a
+  // debounced backend lookup. An id we don't have loaded is only flagged "missing"
+  // after the backend confirms a 404 — it may be a valid id outside the current
+  // view. A transient lookup error stays silent (state "") so the backend's own
+  // submit-time validation is the authority.
+  useEffect(() => {
+    const tid = target.trim();
+    if (!tid) {
+      setTargetState('');
+      setTargetFound(null);
+      return;
+    }
+    const local = txns.find((t) => t.id === tid);
+    if (local) {
+      setTargetState('found');
+      setTargetFound(local);
+      return;
+    }
+    setTargetState('checking');
+    setTargetFound(null);
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      kasas
+        .getTransaction(tid)
+        .then((t) => {
+          if (cancelled) return;
+          if (t) {
+            setTargetState('found');
+            setTargetFound(t);
+          } else {
+            setTargetState('missing');
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setTargetState('');
+        });
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [target, txns]);
+
+  // Add is enabled once a kind is set and the target id is confirmed. A still-
+  // "checking" or known-"missing" id keeps it disabled; a transient error (state
+  // "") falls through to the backend's validation on submit.
+  const canAdd =
+    !!kind.trim() &&
+    !!target.trim() &&
+    targetState !== 'checking' &&
+    targetState !== 'missing' &&
+    !busy;
+
   const add = async () => {
-    if (!kind.trim() || !target) return;
+    if (!canAdd) return;
     setBusy(true);
     setError(undefined);
     try {
-      const r = await kasas.addRelationship(id, kind.trim(), target);
+      const r = await kasas.addRelationship(id, kind.trim(), target.trim());
       setEdges(r.relationships);
       setKind('');
       setTarget('');
@@ -212,25 +277,31 @@ function RelationshipsView({ id, txns }: { id: string; txns: Transaction[] }) {
             <option key={k.kind} value={k.kind} />
           ))}
         </datalist>
-        <select
+        <input
           value={target}
           onChange={(e) => setTarget(e.target.value)}
-          className="min-w-0 flex-1 rounded-lg border border-line bg-surface-raised px-2 py-1.5 text-sm text-slate-100 focus:border-blue-500/60 focus:outline-none"
-        >
-          <option value="">Select target transaction…</option>
-          {txns
-            .filter((t) => t.id !== id)
-            .slice(0, 500)
-            .map((t) => (
-              <option key={t.id} value={t.id}>
-                {labelFor(t.id)}
-              </option>
-            ))}
-        </select>
-        <Button variant="primary" onClick={() => void add()} disabled={busy || !kind.trim() || !target}>
+          placeholder="target transaction id"
+          className="min-w-0 flex-1 rounded-lg border border-line bg-surface-raised px-2 py-1.5 font-mono text-sm text-slate-100 focus:border-blue-500/60 focus:outline-none"
+        />
+        <Button variant="primary" onClick={() => void add()} disabled={!canAdd}>
           Add
         </Button>
       </div>
+      {target.trim() && targetState === 'found' && targetFound && (
+        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+          <span>↳</span>
+          <span className="truncate">{txnSummary(targetFound)}</span>
+        </div>
+      )}
+      {target.trim() && targetState === 'checking' && (
+        <div className="text-xs text-slate-400">Checking id…</div>
+      )}
+      {target.trim() && targetState === 'missing' && (
+        <div className="flex items-center gap-1.5 text-xs text-rose-300/90">
+          <span className="font-semibold">✕</span>
+          <span>No transaction with id {target.trim()}</span>
+        </div>
+      )}
       {error && <div className="text-xs text-rose-300/90">{error}</div>}
     </div>
   );
