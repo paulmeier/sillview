@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/paulmeier/sillview/compare/v0.4.0...v0.5.0) (2026-06-13)
+
+
+### Features
+
+* enter relationship target by id with live validation ([#32](https://github.com/paulmeier/sillview/issues/32)) ([c4057b6](https://github.com/paulmeier/sillview/commit/c4057b6e7fb3b9df1182b3da3d719a116018d7b6))
+
 ## [0.4.0](https://github.com/paulmeier/sillview/compare/v0.3.1...v0.4.0) (2026-06-13)
 
 
