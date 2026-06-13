@@ -11,25 +11,47 @@
 <p align="center">
   <a href="https://github.com/paulmeier/sillview/actions/workflows/ci.yml"><img src="https://github.com/paulmeier/sillview/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/paulmeier/sillview/actions/workflows/release-please.yml"><img src="https://github.com/paulmeier/sillview/actions/workflows/release-please.yml/badge.svg" alt="Release"></a>
-  <a href="https://github.com/paulmeier/sillview/releases/latest"><img src="https://img.shields.io/github/v/release/paulmeier/sillview?logo=apple&logoColor=white&color=000000" alt="Download"></a>
+  <a href="https://github.com/paulmeier/sillview/releases/latest"><img src="https://img.shields.io/github/v/release/paulmeier/sillview?label=download&color=000000" alt="Download"></a>
   <a href="https://paulmeier.github.io/sillview/"><img src="https://img.shields.io/badge/docs-mkdocs--material-1b3a5e?logo=readthedocs&logoColor=white" alt="Docs"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
 </p>
 
 ---
 
-Sillview is a **macOS desktop app** that turns the
-[**kasas**](https://github.com/paulmeier/kasas) financial ledger into a dashboard
+Sillview is a **cross-platform desktop app** (macOS, Linux, and Windows) that turns
+the [**kasas**](https://github.com/paulmeier/kasas) financial ledger into a dashboard
 you can actually look at. Build your own dashboards from a **marketplace of
 widgets**, arrange them on a **draggable, resizable grid**, and save them locally.
 
 The defining trait: Sillview **bundles and manages the kasas backend for you** —
 there's no separate server to install or run. On first launch it starts kasas on a
-private loopback port, connects automatically, and can keep it running in the
-background and update it in place.
+private loopback port, connects automatically, updates it in place, and — on macOS —
+can keep it running in the background.
 
 Built with **Electron Forge + Vite + React 19 + TypeScript**, styled with
 **Tailwind CSS v4**, and visualized with **Tremor**-style charts (Recharts).
+
+## Install
+
+Download the latest installer for your platform from the
+[**Releases**](https://github.com/paulmeier/sillview/releases/latest) page:
+
+| Platform | Download |
+| --- | --- |
+| **macOS** (Apple Silicon) | `.dmg` |
+| **Linux** (x64) | `.deb` or `.rpm` |
+| **Windows** (x64) | `Setup.exe` (Squirrel installer) |
+
+> **Heads-up: builds are not yet code-signed**, so your OS may warn on first launch.
+>
+> - **macOS** says *"Sillview is damaged and can't be opened"* — this is Gatekeeper,
+>   not a corrupt download. Strip the quarantine flag, then open normally:
+>   ```bash
+>   xattr -dr com.apple.quarantine /Applications/Sillview.app
+>   ```
+> - **Windows** shows a SmartScreen prompt — click **More info → Run anyway**.
+>
+> Signing + notarization are planned; until then these one-time steps are expected.
 
 ## Features
 
@@ -39,8 +61,9 @@ Built with **Electron Forge + Vite + React 19 + TypeScript**, styled with
   flow, spending, live activity) and drop widgets onto a dashboard.
 - **Managed backend** — Sillview ships the kasas binary, generates its config,
   starts it on loopback, and connects automatically. No separate server to run.
-- **Background mode** — opt in to a macOS LaunchAgent that keeps kasas syncing even
-  when Sillview is closed, so your data stays fresh.
+- **Background mode (macOS)** — opt in to a macOS LaunchAgent that keeps kasas
+  syncing even when Sillview is closed, so your data stays fresh. On Linux and
+  Windows kasas runs while Sillview is open (a persistent daemon is a follow-up).
 - **In-app backend updates** — drive kasas's own verified self-update (HTTPS +
   SHA-256 + atomic replace) and restart it in one click.
 - **Offline mock mode** — run the entire UI on in-memory fixtures: no backend, no
@@ -60,7 +83,7 @@ On first launch Sillview copies the bundled binary into its data dir, generates 
 
 Open **Settings** (gear at the bottom of the sidebar) to switch between the
 **Bundled** backend and an **External** kasas URL, set the **poll interval**,
-toggle **Background mode**, and watch process **status** and live logs.
+toggle **Background mode** (macOS only), and watch process **status** and live logs.
 
 Configure data sources (SimpleFIN, exchange addresses, etc.) for now via kasas's
 own web UI at `http://127.0.0.1:8080`; in-app source setup is a planned follow-up.
@@ -81,14 +104,20 @@ run) is generated relative to "now" so every widget has data.
 ### Other scripts
 
 ```bash
-npm run package    # build an unpackaged .app
-npm run make       # build a distributable (.dmg + .zip on macOS)
+npm run package    # build an unpackaged app bundle
+npm run make       # build distributables for the host OS
 npm run typecheck  # tsc --noEmit
 ```
 
-Code signing / notarization for release builds are wired but disabled; enable them
-in `forge.config.ts` using `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID` env vars
-(never inline credentials).
+`make` runs only the makers for the host platform: **macOS** → `.dmg` + `.zip`,
+**Linux** → `.deb` + `.rpm`, **Windows** → Squirrel `.exe`. CI builds all three on a
+per-OS runner matrix and attaches them to each GitHub Release
+(`.github/workflows/build.yml`).
+
+Builds are **unsigned by default** (see [Install](#install) for the first-launch
+workarounds). macOS code signing / notarization is wired but disabled; enable it in
+`forge.config.ts` using `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID` env vars
+(never inline credentials). Windows Authenticode signing is a planned follow-up.
 
 ## Architecture
 

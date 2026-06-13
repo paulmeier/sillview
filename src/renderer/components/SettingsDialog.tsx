@@ -78,6 +78,12 @@ export function SettingsDialog({
 
   const [tab, setTab] = useState<Tab>('backend');
   const [kasasTab, setKasasTab] = useState<KasasSubTab>('settings');
+
+  // The background daemon is macOS-only; hide its tab on other platforms.
+  const daemonSupported = status?.daemonSupported ?? true;
+  const visibleTabs = daemonSupported
+    ? TABS
+    : TABS.filter((t) => t.id !== 'background');
   const [draft, setDraft] = useState<KasasSettings | null>(settings);
   const [extUrl, setExtUrl] = useState(connConfig.baseUrl);
   const [extToken, setExtToken] = useState(connConfig.token);
@@ -159,7 +165,7 @@ export function SettingsDialog({
 
           {/* Tab bar */}
           <div className="flex gap-1 border-b border-line px-4 pt-2">
-            {TABS.map((t) => (
+            {visibleTabs.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}

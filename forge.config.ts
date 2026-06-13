@@ -37,8 +37,8 @@ const config: ForgeConfig = {
     new MakerDMG({ icon: './assets/icon.icns' }, ['darwin']),
     new MakerZIP({}, ['darwin']),
     new MakerSquirrel({ setupIcon: './assets/icon.ico' }),
-    new MakerRpm({}),
-    new MakerDeb({}),
+    new MakerRpm({ options: { icon: './assets/icon.png' } }),
+    new MakerDeb({ options: { icon: './assets/icon.png' } }),
   ],
   plugins: [
     new VitePlugin({

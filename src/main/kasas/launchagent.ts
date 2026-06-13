@@ -16,6 +16,14 @@ const execFileP = promisify(execFile);
 
 export const LABEL = 'sh.kasas.sillview';
 
+/**
+ * The background daemon is implemented with macOS LaunchAgents, so it's only
+ * available on darwin. Off macOS, kasas runs as a normal managed child process
+ * and the "Background" feature is hidden (Windows Scheduled Task / Linux systemd
+ * user unit equivalents are a follow-up).
+ */
+export const supported = process.platform === 'darwin';
+
 function plistPath(): string {
   return path.join(os.homedir(), 'Library', 'LaunchAgents', `${LABEL}.plist`);
 }

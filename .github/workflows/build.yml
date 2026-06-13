@@ -28,12 +28,26 @@ permissions:
 
 jobs:
   build:
-    name: Build macOS app
-    # Apple-Silicon runner: produces an arm64 .dmg / .zip. The bundled kasas
-    # binary is matched to the runner arch. (Universal/amd64 build is a follow-up.)
-    runs-on: macos-latest
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
+    strategy:
+      # Don't let one platform failing abort the others — a fresh kasas release
+      # may not have published every OS's binary yet (e.g. windows is gated on
+      # the kasas repo shipping a windows build).
+      fail-fast: false
+      matrix:
+        include:
+          # macOS: Apple-Silicon runner → arm64 .dmg + .zip (.zip is required for
+          # Squirrel.Mac auto-update). Universal/Intel build is a follow-up.
+          - { os: macos-latest, goos: darwin, goarch: arm64, kasas_bin: kasas }
+          # Linux: x64 .deb + .rpm.
+          - { os: ubuntu-latest, goos: linux, goarch: amd64, kasas_bin: kasas }
+          # Windows: x64 Squirrel .exe installer. Requires the kasas repo to
+          # publish a windows_amd64 binary (matrix entry there); until then this
+          # leg fails at the fetch step while mac/linux still publish.
+          - { os: windows-latest, goos: windows, goarch: amd64, kasas_bin: kasas.exe }
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +56,12 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Install Linux packaging tools
+        # The deb maker needs fakeroot/dpkg (dpkg is preinstalled) and the rpm
+        # maker needs rpmbuild, which ubuntu-latest does not ship by default.
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm fakeroot
+
       - name: Install dependencies
         run: npm ci
 
@@ -49,23 +69,26 @@ jobs:
         # sillview bundles the kasas backend (forge `extraResource: resources/bin`).
         # Instead of building the sibling Go repo, pull the matching prebuilt
         # binary from the public kasas GitHub Release and verify its checksum.
+        # `shell: bash` so this one script runs identically on all three runners
+        # (Git Bash on Windows). All paths stay relative to avoid MSYS path
+        # translation when bash hands them to the native gh/tar binaries.
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           KASAS_VERSION: ${{ inputs.kasas_version }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          KASAS_BIN: ${{ matrix.kasas_bin }}
         run: |
           set -euo pipefail
           version="${KASAS_VERSION:-latest}"
-          case "$(uname -m)" in
-            arm64) arch=arm64 ;;
-            x86_64) arch=amd64 ;;
-            *) echo "Unsupported arch: $(uname -m)" >&2; exit 1 ;;
-          esac
           if [ "$version" = "latest" ]; then
             version="$(gh release view --repo paulmeier/kasas --json tagName -q .tagName)"
           fi
-          asset="kasas_${version}_darwin_${arch}.tar.gz"
+          asset="kasas_${version}_${GOOS}_${GOARCH}.tar.gz"
           echo "Downloading ${asset} from paulmeier/kasas…"
-          tmp="$(mktemp -d)"
+          tmp=".kasas-dl"
+          rm -rf "$tmp" && mkdir -p "$tmp"
           # A release is tagged before its assets finish uploading, so a fresh
           # kasas release can briefly exist with no downloadable binary
           # ("no assets to download"). Retry to ride out that upload lag instead
@@ -76,51 +99,68 @@ jobs:
               break
             fi
             if [ "$attempt" -eq 6 ]; then
-              echo "kasas ${version} assets still unavailable after ${attempt} attempts" >&2
+              echo "kasas ${version} ${GOOS}/${GOARCH} asset unavailable after ${attempt} attempts" >&2
               exit 1
             fi
-            echo "kasas ${version} assets not ready (attempt ${attempt}); retrying in 30s…" >&2
+            echo "kasas ${version} ${GOOS}/${GOARCH} not ready (attempt ${attempt}); retrying in 30s…" >&2
             sleep 30
           done
-          ( cd "$tmp" && shasum -a 256 -c "${asset}.sha256" )
+          # macOS ships `shasum` (not `sha256sum`); Linux and Git Bash ship
+          # `sha256sum`. Prefer whichever is present.
+          ( cd "$tmp" && (command -v sha256sum >/dev/null \
+              && sha256sum -c "${asset}.sha256" \
+              || shasum -a 256 -c "${asset}.sha256") )
           tar -C "$tmp" -xzf "$tmp/$asset"
           mkdir -p resources/bin
-          cp "$tmp/kasas_${version}_darwin_${arch}/kasas" resources/bin/kasas
-          chmod +x resources/bin/kasas
-          echo "Bundled kasas ${version} (${arch})"
+          cp "$tmp/kasas_${version}_${GOOS}_${GOARCH}/${KASAS_BIN}" "resources/bin/${KASAS_BIN}"
+          chmod +x "resources/bin/${KASAS_BIN}" || true
+          echo "Bundled kasas ${version} (${GOOS}/${GOARCH})"
 
       - name: Build distributables
-        # forge `make` on macOS runs only the darwin makers (DMG + ZIP); the
-        # Windows/Linux makers are skipped on this host. The build is unsigned —
-        # code signing + notarization are intentionally off (env-var opt-in).
+        # forge `make` runs only the makers whose platforms include the host:
+        # darwin → DMG + ZIP, linux → deb + rpm, win32 → Squirrel. Builds are
+        # unsigned — code signing + notarization are intentionally off (env-var
+        # opt-in in forge.config.ts).
         run: npm run make
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: sillview-macos-arm64
+          name: sillview-${{ runner.os }}-${{ matrix.goarch }}
+          # Per-OS outputs; patterns that match nothing on a given OS are simply
+          # skipped (the build still produces at least one installer).
           path: |
             out/make/**/*.dmg
             out/make/**/*.zip
+            out/make/**/*.deb
+            out/make/**/*.rpm
+            out/make/**/*.exe
+            out/make/**/*.nupkg
+            out/make/**/RELEASES
           if-no-files-found: error
 
       - name: Publish to GitHub Release
         # Only on the release path (workflow_call passes a tag); a manual
-        # workflow_dispatch run just uploads the artifact above.
+        # workflow_dispatch run just uploads the artifact above. Each OS's job
+        # uploads its own distributables to the shared release (--clobber makes
+        # re-runs idempotent); filenames don't collide across platforms.
         if: ${{ inputs.release_tag != '' }}
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
           # release-please already created the Release; fall back to creating it
-          # if missing, then (re)upload the distributables. `--clobber` makes
-          # re-runs idempotent.
+          # if missing, then (re)upload the distributables.
           gh release view "$RELEASE_TAG" >/dev/null 2>&1 \
             || gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes --verify-tag
           # macOS runners ship bash 3.2, which has no `mapfile`; collect the
           # distributables with a portable read loop instead.
           assets=()
           while IFS= read -r f; do assets+=("$f"); done \
-            < <(find out/make -type f \( -name '*.dmg' -o -name '*.zip' \))
+            < <(find out/make -type f \( \
+                  -name '*.dmg' -o -name '*.zip' \
+                  -o -name '*.deb' -o -name '*.rpm' \
+                  -o -name '*.exe' -o -name '*.nupkg' -o -name 'RELEASES' \))
           gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
