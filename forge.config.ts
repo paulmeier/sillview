@@ -12,6 +12,11 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     name: 'Sillview',
+    // Lowercase binary name. The bundle/app stays "Sillview" (from `name`), but
+    // the Electron executable becomes `sillview` — the Linux deb/rpm makers
+    // derive a lowercased package name and look for a matching `sillview` binary,
+    // so without this they fail with "could not find the Electron app binary".
+    executableName: 'sillview',
     appBundleId: 'so.kasas.sillview',
     appCategoryType: 'public.app-category.finance',
     // App bundle icon. Extension-less on purpose: packager appends `.icns` on
