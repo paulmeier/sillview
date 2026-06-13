@@ -14,6 +14,10 @@ const config: ForgeConfig = {
     name: 'Sillview',
     appBundleId: 'so.kasas.sillview',
     appCategoryType: 'public.app-category.finance',
+    // App bundle icon. Extension-less on purpose: packager appends `.icns` on
+    // macOS and `.ico` on Windows. Regenerate from assets/icon.svg (the README
+    // logo) with `scripts/gen-icons.sh`.
+    icon: './assets/icon',
     // Bundle the kasas backend binary alongside the app. It lands at
     // `process.resourcesPath/bin/kasas` and is kept OUTSIDE the asar archive so
     // it stays executable. Run `npm run sync:kasas` to produce it first.
@@ -30,9 +34,9 @@ const config: ForgeConfig = {
     // macOS (our first target): DMG installer + ZIP (ZIP is required for
     // Squirrel.Mac auto-update). The Windows/Linux makers below are harmless on
     // macOS — `make` only runs the makers whose platforms include the host.
-    new MakerDMG({}, ['darwin']),
+    new MakerDMG({ icon: './assets/icon.icns' }, ['darwin']),
     new MakerZIP({}, ['darwin']),
-    new MakerSquirrel({}),
+    new MakerSquirrel({ setupIcon: './assets/icon.ico' }),
     new MakerRpm({}),
     new MakerDeb({}),
   ],

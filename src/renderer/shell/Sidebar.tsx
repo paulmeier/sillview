@@ -1,12 +1,12 @@
 /** Left navigation: grouped built-in routes + a connection/settings footer. */
 
 import { NavLink } from 'react-router-dom';
-import { RiPuzzleLine, RiSettings3Line, RiSignalTowerLine } from '@remixicon/react';
+import { RiPuzzleLine, RiSettings3Line } from '@remixicon/react';
 import { GROUP_ORDER, ROUTES, type NavRoute } from './routes';
 import { useConnection } from '../store/connection';
 import { useBackend } from '../store/backend';
 import { usePluginPages } from './usePluginPages';
-import { StatusDot } from '../components/ui';
+import { Logo, StatusDot } from '../components/ui';
 import { cx } from '../lib/utils';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -46,7 +46,7 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-line bg-surface">
       <div className="app-drag flex items-center gap-2 px-4 pb-3 pt-10">
-        <RiSignalTowerLine className="size-5 text-blue-400" />
+        <Logo className="size-5" />
         <span className="text-sm font-semibold tracking-tight text-slate-100">sillview</span>
       </div>
 
