@@ -62,9 +62,10 @@ Download the latest installer for your platform from the
   flow, spending, live activity) and drop widgets onto a dashboard.
 - **Managed backend** — Sillview ships the kasas binary, generates its config,
   starts it on loopback, and connects automatically. No separate server to run.
-- **Background mode (macOS)** — opt in to a macOS LaunchAgent that keeps kasas
-  syncing even when Sillview is closed, so your data stays fresh. On Linux and
-  Windows kasas runs while Sillview is open (a persistent daemon is a follow-up).
+- **Background mode (macOS & Linux)** — opt in to an OS service (a macOS
+  LaunchAgent, or a Linux systemd user unit) that keeps kasas syncing even when
+  Sillview is closed, so your data stays fresh. On Windows kasas runs while
+  Sillview is open (a Scheduled Task is a follow-up).
 - **In-app backend updates** — drive kasas's own verified self-update (HTTPS +
   SHA-256 + atomic replace) and restart it in one click.
 - **Offline mock mode** — run the entire UI on in-memory fixtures: no backend, no
@@ -84,7 +85,7 @@ On first launch Sillview copies the bundled binary into its data dir, generates 
 
 Open **Settings** (gear at the bottom of the sidebar) to switch between the
 **Bundled** backend and an **External** kasas URL, set the **poll interval**,
-toggle **Background mode** (macOS only), and watch process **status** and live logs.
+toggle **Background mode** (macOS & Linux), and watch process **status** and live logs.
 
 Configure data sources (SimpleFIN, exchange addresses, etc.) for now via kasas's
 own web UI at `http://127.0.0.1:8080`; in-app source setup is a planned follow-up.

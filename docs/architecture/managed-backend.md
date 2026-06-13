@@ -22,7 +22,8 @@ The binary ships inside the app via Electron Forge's `extraResource`:
 On first run — and whenever the app version changes — Sillview copies the bundled
 binary to a **stable, writable** path under its data directory and marks it `+x`.
 Running from a writable location (not the read-only app bundle) is what lets the
-LaunchAgent reference it and lets in-place updates work. A `.version` marker next
+background daemon (LaunchAgent / systemd unit) reference it and lets in-place
+updates work. A `.version` marker next
 to the copy tracks which app version installed it.
 
 ```mermaid
@@ -113,7 +114,7 @@ Two measures prevent this:
 | `running` | Healthy app-managed child. |
 | `crashed` | Exited unexpectedly (auto-restart kicks in). |
 | `external` | You pointed Sillview at your own kasas URL. |
-| `daemon` | Running via the background LaunchAgent, not as our child. |
+| `daemon` | Running via the background daemon (LaunchAgent / systemd unit), not as our child. |
 
 Background mode swaps the app-managed child for a daemon; the two are mutually
 exclusive on the port. See [Background Mode](../features/background-mode.md).
