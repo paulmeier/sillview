@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/paulmeier/sillview/compare/v0.8.0...v0.8.1) (2026-06-13)
+
+
+### Bug Fixes
+
+* name the executable lowercase so Linux deb/rpm makers find it ([#41](https://github.com/paulmeier/sillview/issues/41)) ([42bab26](https://github.com/paulmeier/sillview/commit/42bab2612a14d6ae2be058a69260f7379a6b7858))
+
 ## [0.8.0](https://github.com/paulmeier/sillview/compare/v0.7.0...v0.8.0) (2026-06-13)
 
 
