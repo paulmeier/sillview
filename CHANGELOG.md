@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/paulmeier/sillview/compare/v0.3.1...v0.4.0) (2026-06-13)
+
+
+### Features
+
+* scope market widget requests to the visible window ([#31](https://github.com/paulmeier/sillview/issues/31)) ([84316d8](https://github.com/paulmeier/sillview/commit/84316d867fb8c64e797411ae15597d045512ef76))
+* sources as an icon list with per-source detail pages ([#29](https://github.com/paulmeier/sillview/issues/29)) ([616f61b](https://github.com/paulmeier/sillview/commit/616f61b5ff131b975a8a6c616eea1e5c3ebc8f08))
+
 ## [0.3.1](https://github.com/paulmeier/sillview/compare/v0.3.0...v0.3.1) (2026-06-12)
 
 
