@@ -4,7 +4,7 @@ import { formatMoney, parseAmount } from '../lib/money';
 import { AreaChart } from '../components/tremor/AreaChart';
 import { WidgetState } from '../components/ui';
 import type { WidgetProps } from './types';
-import { growthOf, MarketUnavailable, pctChange } from './market-util';
+import { DEFAULT_RANGE_DAYS, growthOf, MarketUnavailable, pctChange, RangeSelect, sinceForDays } from './market-util';
 
 /**
  * Benchmark comparison (sillview ADR-0004): chart a market series as "growth of
@@ -65,7 +65,8 @@ function Body(props: {
   onPickAccount: (id: string) => void;
   accountBalance: string;
 }) {
-  const points = useMarketPoints(props.seriesId, true);
+  const [days, setDays] = useState(DEFAULT_RANGE_DAYS);
+  const points = useMarketPoints(props.seriesId, sinceForDays(days), true);
 
   if (points.loading && !points.data) return <WidgetState loading />;
   if (points.error) return <WidgetState error={points.error} />;
@@ -109,6 +110,7 @@ function Body(props: {
             </option>
           ))}
         </select>
+        <RangeSelect value={days} onChange={setDays} />
         <span className="ml-auto text-xs text-slate-400">
           {props.seriesLabel} {pctChange(values)} · balance {props.accountBalance}
         </span>

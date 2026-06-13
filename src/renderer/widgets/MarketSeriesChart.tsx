@@ -4,7 +4,7 @@ import { parseAmount } from '../lib/money';
 import { AreaChart } from '../components/tremor/AreaChart';
 import { WidgetState } from '../components/ui';
 import type { WidgetProps } from './types';
-import { MarketUnavailable } from './market-util';
+import { DEFAULT_RANGE_DAYS, MarketUnavailable, RangeSelect, sinceForDays } from './market-util';
 
 /**
  * A standalone line chart of one configured market series' daily closes, fetched
@@ -48,7 +48,8 @@ function SeriesChart({
   picked: string;
   onPick: (id: string) => void;
 }) {
-  const points = useMarketPoints(id, true);
+  const [days, setDays] = useState(DEFAULT_RANGE_DAYS);
+  const points = useMarketPoints(id, sinceForDays(days), true);
 
   if (points.loading && !points.data) return <WidgetState loading />;
   if (points.error) return <WidgetState error={points.error} />;
@@ -61,17 +62,20 @@ function SeriesChart({
   return (
     <div className="flex h-full flex-col">
       <div className="mb-1 flex items-center justify-between gap-2">
-        <select
-          className="rounded border border-slate-700 bg-slate-800/60 px-1.5 py-0.5 text-xs text-slate-200"
-          value={picked}
-          onChange={(e) => onPick(e.target.value)}
-        >
-          {options.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            className="rounded border border-slate-700 bg-slate-800/60 px-1.5 py-0.5 text-xs text-slate-200"
+            value={picked}
+            onChange={(e) => onPick(e.target.value)}
+          >
+            {options.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <RangeSelect value={days} onChange={setDays} />
+        </div>
         <span className="text-xs text-slate-500">
           {kindLabel} · {currency}
           {points.data?.as_of ? ` · as of ${points.data.as_of}` : ''}
