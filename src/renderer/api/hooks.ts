@@ -114,9 +114,12 @@ export function useMarketSeries(live = true) {
  * refetches when kasas emits events (a `market.updated` after a background refresh
  * ticks the event nonce), so a stale-then-fresh series updates on its own.
  */
-export function useMarketPoints(id: string, live = true) {
+export function useMarketPoints(id: string, since?: string, live = true) {
   const keys = useKeys(live);
-  return useAsync(() => (id ? kasas.marketPoints(id) : Promise.resolve(EMPTY_POINTS)), [...keys, id]);
+  return useAsync(
+    () => (id ? kasas.marketPoints(id, since) : Promise.resolve(EMPTY_POINTS)),
+    [...keys, id, since],
+  );
 }
 
 /**

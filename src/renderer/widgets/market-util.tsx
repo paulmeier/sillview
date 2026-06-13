@@ -34,3 +34,45 @@ export function pctChange(values: number[]): string {
   const sign = pct >= 0 ? '+' : '';
   return `${sign}${pct.toFixed(1)}%`;
 }
+
+/**
+ * Lookback presets for the market charts. The chosen window scopes the points
+ * request (a `since` lower bound) so a widget fetches only what it displays —
+ * not the series' full cached history. `days: 0` ("Max") means no lower bound.
+ */
+export const RANGES = [
+  { label: '1M', days: 30 },
+  { label: '3M', days: 90 },
+  { label: '6M', days: 180 },
+  { label: '1Y', days: 365 },
+  { label: 'Max', days: 0 },
+] as const;
+
+/** The default lookback — bounds the request without hiding a meaningful window. */
+export const DEFAULT_RANGE_DAYS = 365;
+
+/** ISO date `days` before today, or undefined for "Max" (no lower bound). */
+export function sinceForDays(days: number): string | undefined {
+  if (!days) return undefined;
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Compact lookback picker shared by the market widgets. */
+export function RangeSelect({ value, onChange }: { value: number; onChange: (days: number) => void }) {
+  return (
+    <select
+      className="rounded border border-slate-700 bg-slate-800/60 px-1.5 py-0.5 text-xs text-slate-200"
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      title="Time range"
+    >
+      {RANGES.map((r) => (
+        <option key={r.label} value={r.days}>
+          {r.label}
+        </option>
+      ))}
+    </select>
+  );
+}
