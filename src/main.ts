@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, shell } from 'electron';
+import { app, BrowserWindow, nativeImage, session, shell } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpc, startBackend, stopBackend } from './main/ipc';
@@ -12,6 +12,15 @@ if (started) {
 // In dev, Forge injects this global with the Vite dev-server URL; in a packaged
 // build it is undefined and we load the built renderer from disk.
 const isDev = !!MAIN_WINDOW_VITE_DEV_SERVER_URL;
+
+// In a packaged build the app bundle carries the .icns (forge.config.ts), but the
+// dev run (`npm start`) launches the bare Electron binary and shows its default
+// atom in the dock. Point the dock at our icon so dev matches the shipped app.
+function setDevDockIcon(): void {
+  if (!isDev || process.platform !== 'darwin' || !app.dock) return;
+  const icon = nativeImage.createFromPath(path.join(app.getAppPath(), 'assets/icon.png'));
+  if (!icon.isEmpty()) app.dock.setIcon(icon);
+}
 
 function contentSecurityPolicy(): string {
   // The renderer never talks to kasas directly (all HTTP/SSE go through main via
@@ -78,6 +87,7 @@ app.on('ready', async () => {
     });
   });
 
+  setDevDockIcon();
   await registerIpc();
   createWindow();
   // KASAS_MOCK serves fixtures from the main process; don't spawn the real binary.

@@ -100,6 +100,24 @@ export function StatusDot({ tone = 'neutral', pulse }: { tone?: Tone; pulse?: bo
   );
 }
 
+/**
+ * The Sillview brand mark — the indigo square with ascending bars from the
+ * README logo (docs/assets/favicon.svg, the small-size variant that stays
+ * legible next to the sidebar title). Sizing comes from `className`.
+ */
+export function Logo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 128 128" className={className} role="img" aria-label="Sillview">
+      <rect x="8" y="8" width="112" height="112" rx="26" fill="#4338ca" />
+      <g fill="#ffffff">
+        <rect x="34" y="64" width="13" height="30" rx="3" />
+        <rect x="57" y="50" width="13" height="44" rx="3" />
+        <rect x="80" y="36" width="13" height="58" rx="3" />
+      </g>
+    </svg>
+  );
+}
+
 export function Spinner({ className }: { className?: string }) {
   return <RiLoader4Line className={cx('size-5 animate-spin text-slate-500', className)} />;
 }
