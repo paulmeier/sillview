@@ -123,6 +123,30 @@ export function useMarketPoints(id: string, since?: string, live = true) {
 }
 
 /**
+ * Daily closes for several series at once, for the comparison chart where the
+ * number of selected series is dynamic. We fan out one fetch per id inside a
+ * single useAsync rather than calling useMarketPoints in a loop — a variable
+ * hook count would break the rules of hooks. The result is keyed by series id.
+ * Refetches when the selection (`ids`) or window (`since`) changes, on reconnect,
+ * and — with live=true — on market events.
+ */
+export function useMarketPointsMulti(ids: string[], since?: string, live = true) {
+  const keys = useKeys(live);
+  const idKey = ids.join(',');
+  return useAsync<Record<string, MarketPointsResponse>>(async () => {
+    if (ids.length === 0) return {};
+    const results = await Promise.all(ids.map((id) => kasas.marketPoints(id, since)));
+    const out: Record<string, MarketPointsResponse> = {};
+    ids.forEach((id, i) => {
+      out[id] = results[i];
+    });
+    return out;
+    // idKey stands in for `ids` (a fresh array each render) so the dep is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [...keys, idKey, since]);
+}
+
+/**
  * Capability gate (ADR-0002): whether the connected kasas exposes /api/v1/market/*.
  * A backend predating market data answers {enabled:false} or 404; either way the
  * widget should degrade to a "requires a newer kasas" tile, not a broken chart.

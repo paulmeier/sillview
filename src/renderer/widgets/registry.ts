@@ -116,10 +116,11 @@ export const WIDGETS: WidgetDefinition[] = [
   {
     type: 'market-series',
     title: 'Market Series',
-    description: 'A line chart of one configured market series (index, fund, FX, crypto).',
+    description:
+      'Overlay one or more market series on one chart — two or more compare as "growth of $10k". Toggle lines with checkboxes.',
     category: 'Market',
     icon: RiLineChartLine,
-    defaultSize: { w: 6, h: 5, minW: 3, minH: 3 },
+    defaultSize: { w: 6, h: 5, minW: 4, minH: 3 },
     component: MarketSeriesChartWidget,
   },
 ];
