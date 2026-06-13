@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/paulmeier/sillview/compare/v0.7.0...v0.8.0) (2026-06-13)
+
+
+### Features
+
+* build and run on Windows and Linux, not just macOS ([#38](https://github.com/paulmeier/sillview/issues/38)) ([a88f1b6](https://github.com/paulmeier/sillview/commit/a88f1b69515e0dfacf77adc577f6dd1f7f5d2231))
+
+
+### Bug Fixes
+
+* start new users with a clean, empty dashboard ([#39](https://github.com/paulmeier/sillview/issues/39)) ([e76d36d](https://github.com/paulmeier/sillview/commit/e76d36dd6736aeb1bf012d2040a2963f0f6371d2))
+
 ## [0.7.0](https://github.com/paulmeier/sillview/compare/v0.6.0...v0.7.0) (2026-06-13)
 
 
