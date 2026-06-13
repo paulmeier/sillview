@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/paulmeier/sillview/compare/v0.6.0...v0.7.0) (2026-06-13)
+
+
+### Features
+
+* use the README logo as the app icon and sidebar mark ([#36](https://github.com/paulmeier/sillview/issues/36)) ([306f62c](https://github.com/paulmeier/sillview/commit/306f62c3d201fd4945e4d912fed15f806e2e8333))
+
 ## [0.6.0](https://github.com/paulmeier/sillview/compare/v0.5.0...v0.6.0) (2026-06-13)
 
 
