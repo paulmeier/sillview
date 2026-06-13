@@ -79,7 +79,8 @@ export function SettingsDialog({
   const [tab, setTab] = useState<Tab>('backend');
   const [kasasTab, setKasasTab] = useState<KasasSubTab>('settings');
 
-  // The background daemon is macOS-only; hide its tab on other platforms.
+  // The background daemon needs a platform backend (macOS LaunchAgent / Linux
+  // systemd user unit); hide its tab where none is available.
   const daemonSupported = status?.daemonSupported ?? true;
   const visibleTabs = daemonSupported
     ? TABS
@@ -330,7 +331,11 @@ export function SettingsDialog({
               <div>
                 <Row
                   label="Keep kasas running in the background"
-                  hint="Installs a macOS LaunchAgent so kasas runs at login, restarts on crash, and keeps polling even when sillview is closed."
+                  hint={
+                    status?.daemonKind === 'systemd'
+                      ? 'Installs a systemd user service so kasas runs at login, restarts on crash, and keeps polling even when sillview is closed.'
+                      : 'Installs a macOS LaunchAgent so kasas runs at login, restarts on crash, and keeps polling even when sillview is closed.'
+                  }
                 >
                   <Switch
                     checked={!!status?.background}
@@ -345,9 +350,12 @@ export function SettingsDialog({
                 )}
                 {status?.background && (
                   <div className="mt-3 rounded-lg border border-line bg-surface-raised p-3 text-xs text-slate-400">
-                    kasas is managed by launchd as{' '}
-                    <code className="text-slate-300">sh.kasas.sillview</code>. Turning this off
-                    stops the daemon and returns to app-managed mode.
+                    kasas is managed by{' '}
+                    {status.daemonKind === 'systemd' ? 'systemd' : 'launchd'} as{' '}
+                    <code className="text-slate-300">
+                      {status.daemonLabel || 'sh.kasas.sillview'}
+                    </code>
+                    . Turning this off stops the daemon and returns to app-managed mode.
                   </div>
                 )}
               </div>

@@ -58,7 +58,10 @@ export interface KasasSettings {
   /** Loopback port the managed instance listens on. */
   port: number;
   logLevel: KasasLogLevel;
-  /** When true, kasas runs as a persistent LaunchAgent (survives app close). */
+  /**
+   * When true, kasas runs as a persistent background daemon — a macOS
+   * LaunchAgent or Linux systemd user unit — that survives the app closing.
+   */
   background: boolean;
   sync: KasasSyncSettings;
 }
@@ -69,7 +72,7 @@ export type KasasProcessState =
   | 'running'
   | 'crashed'
   | 'external' // user points at their own kasas
-  | 'daemon'; // running via LaunchAgent, not as our child
+  | 'daemon'; // running via the OS background daemon, not as our child
 
 export interface KasasStatus {
   state: KasasProcessState;
@@ -80,8 +83,15 @@ export interface KasasStatus {
   baseUrl: string;
   dataDir: string;
   binaryPresent: boolean;
-  /** Whether the persistent background daemon is available (macOS only). */
+  /**
+   * Whether a persistent background daemon is available on this platform
+   * (macOS LaunchAgent or Linux systemd user unit).
+   */
   daemonSupported: boolean;
+  /** Which service mechanism backs the daemon, or null when unsupported. */
+  daemonKind: 'launchd' | 'systemd' | null;
+  /** The agent/unit identifier (e.g. the plist label or systemd unit name). */
+  daemonLabel: string;
   error?: string;
 }
 

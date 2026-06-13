@@ -9,15 +9,21 @@ Toggle it in **Settings → Background**.
 
 ## How it works
 
-Background mode installs a macOS **LaunchAgent** (`sh.kasas.sillview`) that runs
-just the kasas binary:
+Background mode registers an OS service that runs just the kasas binary. Sillview
+picks the right mechanism for your platform:
 
-- **`RunAtLoad`** — starts at login.
-- **`KeepAlive`** — relaunched if it exits.
+- **macOS** — a **LaunchAgent** (`sh.kasas.sillview`) with `RunAtLoad` (starts at
+  login) and `KeepAlive` (relaunched if it exits).
+- **Linux** — a **systemd user unit** (`kasas-sillview.service`) wanted by
+  `default.target` (starts at login) with `Restart=always` (relaunched if it
+  exits). Lingering is enabled best-effort so it can also run across logouts.
 
-It runs the same managed binary against the same generated `config.toml` and data
-directory as the app-managed child, so the data and configuration are identical —
-only *who* supervises the process changes.
+Either way it runs the same managed binary against the same generated
+`config.toml` and data directory as the app-managed child, so the data and
+configuration are identical — only *who* supervises the process changes.
+
+(Windows uses a Scheduled Task — a follow-up; until then the Background tab is
+hidden there.)
 
 ```mermaid
 flowchart TB
@@ -26,7 +32,7 @@ flowchart TB
         APP1 -. "quit ⇒ SIGTERM" .-> K1
     end
     subgraph ON["Background ON"]
-        LA["launchd · sh.kasas.sillview<br/>RunAtLoad + KeepAlive"] --> K2[("kasas")]
+        LA["launchd / systemd<br/>runs at login + restarts on crash"] --> K2[("kasas")]
         APP2["Sillview"] -->|"connects to"| K2
     end
 ```

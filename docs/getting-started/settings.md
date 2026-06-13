@@ -36,8 +36,9 @@ The poll cadence Sillview observes for live data is kasas's own `sync.interval`.
 
 ## Background
 
-Toggle **Background mode** — a macOS LaunchAgent (`sh.kasas.sillview`) that keeps
-kasas running and syncing even when Sillview is closed. Only one of
+Toggle **Background mode** — an OS service (a macOS LaunchAgent
+`sh.kasas.sillview`, or a Linux systemd user unit `kasas-sillview.service`) that
+keeps kasas running and syncing even when Sillview is closed. Only one of
 {app-managed child, background daemon} runs at a time; they're mutually exclusive
 on the port. See [Background Mode](../features/background-mode.md) for details.
 

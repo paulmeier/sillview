@@ -62,7 +62,9 @@ src/
 │   │   ├── manager.ts        # KasasManager: spawn, /readyz, logs, auto-restart
 │   │   ├── paths.ts          # managed file layout + first-run binary copy
 │   │   ├── config-toml.ts    # renders kasas config.toml from settings
+│   │   ├── daemon.ts         # background-mode dispatcher (picks the OS backend)
 │   │   ├── launchagent.ts    # macOS LaunchAgent (background mode)
+│   │   ├── systemd.ts        # Linux systemd user unit (background mode)
 │   │   ├── updater.ts        # drives kasas's self-update CLI
 │   │   └── mock.ts           # offline fixtures (KASAS_MOCK=1)
 │   └── storage/              # backend-settings.json, connection, dashboards.json

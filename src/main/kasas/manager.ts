@@ -1,7 +1,9 @@
 /**
  * Supervises the managed kasas backend: spawns it as a child process, streams
  * its logs, polls /readyz, auto-restarts on crash, and coordinates with the
- * background LaunchAgent (only one of {child, daemon} runs at a time).
+ * background daemon (only one of {child, daemon} runs at a time). The daemon is
+ * a platform service — macOS LaunchAgent or Linux systemd user unit — behind a
+ * uniform interface (see daemon.ts).
  */
 
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
@@ -30,7 +32,7 @@ import {
 } from './paths';
 import { renderConfigToml } from './config-toml';
 import { applyUpdate as runApply, checkForUpdate as runCheck } from './updater';
-import * as launchAgent from './launchagent';
+import * as daemon from './daemon';
 
 interface Emitters {
   status: (status: KasasStatus) => void;
@@ -85,7 +87,9 @@ export class KasasManager {
       baseUrl: this.baseUrl(),
       dataDir: kasasDataDir(),
       binaryPresent: bundledBinaryExists(),
-      daemonSupported: launchAgent.supported,
+      daemonSupported: daemon.supported,
+      daemonKind: daemon.kind,
+      daemonLabel: daemon.label,
       error: this.lastError,
     };
   }
@@ -124,7 +128,7 @@ export class KasasManager {
       return this.status();
     }
     // The background daemon owns the port — don't also spawn a child.
-    if (this.state.settings.background && launchAgent.supported) {
+    if (this.state.settings.background && daemon.supported) {
       this.setState('daemon');
       void this.waitForReady();
       return this.status();
@@ -269,7 +273,7 @@ export class KasasManager {
 
     if (next.mode === 'external') {
       await this.stop();
-      if (prev.background) await launchAgent.uninstall();
+      if (prev.background) await daemon.uninstall();
       this.setState('external');
       return this.status();
     }
@@ -280,18 +284,19 @@ export class KasasManager {
       return this.setBackground(next.background);
     }
     if (next.background) {
-      await launchAgent.reload();
+      await daemon.reload();
       void this.waitForReady();
       return this.status();
     }
     return this.restart();
   }
 
-  /** Install/remove the persistent LaunchAgent and adjust the child accordingly. */
+  /** Install/remove the persistent daemon and adjust the child accordingly. */
   async setBackground(enabled: boolean): Promise<KasasStatus> {
-    // The daemon is macOS-only (LaunchAgents). Off macOS, never persist a
-    // background=true that we can't honor — keep running as a managed child.
-    if (!launchAgent.supported) {
+    // The daemon needs a supported platform backend (LaunchAgent/systemd). Where
+    // there's none, never persist a background=true we can't honor — keep
+    // running as a managed child.
+    if (!daemon.supported) {
       this.state.settings.background = false;
       await saveBackendState(this.state);
       return this.status();
@@ -301,7 +306,7 @@ export class KasasManager {
 
     if (this.state.settings.mode === 'external') {
       // External backend can't be daemonized by us.
-      if (enabled) await launchAgent.uninstall().catch(() => undefined);
+      if (enabled) await daemon.uninstall().catch(() => undefined);
       this.setState('external');
       return this.status();
     }
@@ -315,11 +320,11 @@ export class KasasManager {
 
     if (enabled) {
       await this.stop(); // free the port from the managed child
-      await launchAgent.install(binary, cfgPath);
+      await daemon.install(binary, cfgPath);
       this.setState('daemon');
       void this.waitForReady();
     } else {
-      await launchAgent.uninstall();
+      await daemon.uninstall();
       this.setState('stopped');
       return this.start();
     }
@@ -361,7 +366,7 @@ export class KasasManager {
     const result = await runApply(binary);
     if (result.ok) {
       if (this.state.settings.background) {
-        await launchAgent.reload();
+        await daemon.reload();
         void this.waitForReady();
       } else if (this.state.settings.mode === 'bundled') {
         await this.restart();

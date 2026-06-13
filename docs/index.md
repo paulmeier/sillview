@@ -89,8 +89,8 @@ flowchart LR
 
     ---
 
-    Opt in to a macOS LaunchAgent that keeps kasas syncing even when Sillview is
-    closed — your data stays fresh.
+    Opt in to an OS service (macOS LaunchAgent / Linux systemd user unit) that
+    keeps kasas syncing even when Sillview is closed — your data stays fresh.
 
     [:octicons-arrow-right-24: Background mode](features/background-mode.md)
 
