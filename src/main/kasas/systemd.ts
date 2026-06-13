@@ -47,7 +47,7 @@ function sdQuote(value: string): string {
   return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
-function renderUnit(binary: string, configPath: string): string {
+export function renderUnit(binary: string, configPath: string): string {
   const workingDir = path.dirname(configPath);
   return `[Unit]
 Description=kasas (managed by sillview)
