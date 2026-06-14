@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/paulmeier/sillview/compare/v0.9.1...v0.9.2) (2026-06-14)
+
+
+### Bug Fixes
+
+* restart launchd daemon in place on settings save (kickstart -k) ([#47](https://github.com/paulmeier/sillview/issues/47)) ([ad587de](https://github.com/paulmeier/sillview/commit/ad587dec18fc8a71b86105b8dc048a675049dc36))
+
 ## [0.9.1](https://github.com/paulmeier/sillview/compare/v0.9.0...v0.9.1) (2026-06-13)
 
 
