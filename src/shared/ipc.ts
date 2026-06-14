@@ -151,6 +151,7 @@ export const IpcChannels = {
   // main -> renderer (send/on)
   kasasEvent: 'kasas:event',
   eventStatus: 'events:status',
+  dashboardsChanged: 'dashboards:changed',
   backendStatusEvent: 'backend:statusEvent',
   backendLogEvent: 'backend:logEvent',
   backendUpdateEvent: 'backend:updateEvent',
@@ -182,6 +183,11 @@ export interface SillviewApi {
     /** Returns the persisted JSON blob, or null on first run. */
     load(): Promise<string | null>;
     save(contents: string): Promise<void>;
+    /**
+     * Subscribe to external writes of dashboards.json (e.g. by the MCP server).
+     * The app's own saves do not fire this. Returns an unsubscribe fn.
+     */
+    onChange(cb: () => void): () => void;
   };
   system: {
     /** Open an http(s) URL in the user's default browser (e.g. OAuth consent). */

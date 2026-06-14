@@ -50,6 +50,11 @@ const api: SillviewApi = {
     load: () => ipcRenderer.invoke(IpcChannels.dashboardsLoad) as Promise<string | null>,
     save: (contents: string) =>
       ipcRenderer.invoke(IpcChannels.dashboardsSave, contents) as Promise<void>,
+    onChange: (cb: () => void) => {
+      const handler = () => cb();
+      ipcRenderer.on(IpcChannels.dashboardsChanged, handler);
+      return () => ipcRenderer.removeListener(IpcChannels.dashboardsChanged, handler);
+    },
   },
   system: {
     openExternal: (url: string) =>

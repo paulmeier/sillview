@@ -109,6 +109,7 @@ run) is generated relative to "now" so every widget has data.
 npm run package    # build an unpackaged app bundle
 npm run make       # build distributables for the host OS
 npm run typecheck  # tsc --noEmit
+npm run build:mcp  # bundle the MCP server (see below) → dist-mcp/server.mjs
 ```
 
 `make` runs only the makers for the host platform: **macOS** → `.dmg` + `.zip`,
@@ -120,6 +121,55 @@ Builds are **unsigned by default** (see [Install](#install) for the first-launch
 workarounds). macOS code signing / notarization is wired but disabled; enable it in
 `forge.config.ts` using `APPLE_ID` / `APPLE_PASSWORD` / `APPLE_TEAM_ID` env vars
 (never inline credentials). Windows Authenticode signing is a planned follow-up.
+
+## MCP server — let an LLM build dashboards
+
+Sillview ships a small [Model Context Protocol](https://modelcontextprotocol.io)
+server so an assistant (Claude Desktop, Claude Code, etc.) can create dashboards and
+place widgets for you. It is a standalone stdio process that reads and writes the
+same `dashboards.json` the app uses — the running app **watches that file and
+live-reloads**, so changes appear without a restart (or on the next launch if the app
+is closed).
+
+Build it once (re-run after changing `src/mcp/` or `src/shared/`):
+
+```bash
+npm run build:mcp     # → dist-mcp/server.mjs
+```
+
+Then register it with your MCP client, pointing at the built file. For Claude
+Desktop, add to `claude_desktop_config.json`:
+
+```jsonc
+{
+  "mcpServers": {
+    "sillview": {
+      "command": "node",
+      "args": ["/absolute/path/to/sillview/dist-mcp/server.mjs"]
+    }
+  }
+}
+```
+
+For Claude Code: `claude mcp add sillview -- node /absolute/path/to/sillview/dist-mcp/server.mjs`.
+
+**Tools:** `list_widget_types`, `list_dashboards`, `get_dashboard`,
+`create_dashboard`, `add_widget`, `update_widget_config`, `remove_widget`,
+`rename_dashboard`, `delete_dashboard`, `set_active_dashboard`, plus read-only
+`list_accounts` / `list_market_series` (so market & benchmark widgets get real ids;
+these need kasas running).
+
+**Data location.** The server defaults to a packaged build's userData
+(`~/Library/Application Support/Sillview` on macOS). Two overrides via `env` in the
+config:
+
+- `SILLVIEW_APP_NAME=Electron` — target a `npm start` **dev** build (the bare Electron
+  runtime uses the `Electron` userData dir, not `Sillview`).
+- `SILLVIEW_DATA_DIR=/abs/path` — point at an explicit userData directory.
+
+The bundle keeps its npm dependencies external, so run it from this checkout (it
+resolves `@modelcontextprotocol/sdk` + `zod` from `node_modules`). Shipping it to
+non-developer end users would mean bundling those deps — a follow-up.
 
 ## Architecture
 
@@ -134,7 +184,8 @@ src/
 │   ├── kasas/sse.ts         # /api/v1/events/stream consumer → forwards to renderer
 │   └── storage/             # connection.json + dashboards.json in userData
 ├── preload.ts               # contextBridge → window.api (the only renderer↔main link)
-├── shared/                  # IPC contract + kasas DTO types (used by both sides)
+├── mcp/                     # standalone stdio MCP server (build:mcp → dist-mcp/server.mjs)
+├── shared/                  # IPC contract, kasas DTO types, React-free widget/dashboard model
 └── renderer/
     ├── api/                 # typed kasas client (over window.api) + React hooks
     ├── store/               # zustand: connection + saved dashboards (persisted)
@@ -155,11 +206,15 @@ src/
    `ipcRenderer`.
 2. **Dashboards are saved locally.** kasas has no dashboard storage, so the
    renderer's dashboard store (zustand `persist`) writes through IPC to
-   `dashboards.json` in the app's userData directory.
+   `dashboards.json` in the app's userData directory. The [MCP server](#mcp-server--let-an-llm-build-dashboards)
+   writes the same file directly; main `fs.watch`es it and pushes a reload to the
+   renderer (writes are atomic temp+rename, and the app's own saves are filtered out).
 
-**Adding a widget** is one entry in `src/renderer/widgets/registry.ts` (title,
-category, icon, default size, component) plus a component file — the registry is the
-single source both the marketplace UI and the dashboard engine read.
+**Adding a widget** is one entry of pure metadata in `src/shared/widgets.ts` (title,
+category, default size, config contract) plus an icon + component wired up in
+`src/renderer/widgets/registry.ts`. The metadata is React-free so the MCP server can
+validate widgets without importing the renderer; the data model + on-disk format
+live alongside it in `src/shared/dashboards.ts`.
 
 **kasas data notes:** money (`amount`, `balance`) is a **decimal string in major
 units** with variable scale (2 for USD, up to 18 for ETH) — never round it or store

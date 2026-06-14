@@ -1,11 +1,10 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { RiAddLine, RiCloseLine } from '@remixicon/react';
 import { WIDGETS } from '../widgets/registry';
-import type { WidgetCategory, WidgetDefinition } from '../widgets/types';
+import type { WidgetDefinition } from '../widgets/types';
+import { CATEGORY_ORDER } from '../../shared/widgets';
 import { useDashboards } from '../store/dashboards';
 import { Button, IconButton } from '../components/ui';
-
-const CATEGORY_ORDER: WidgetCategory[] = ['Overview', 'Accounts', 'Spending', 'Activity', 'Market'];
 
 function groupByCategory(): Record<string, WidgetDefinition[]> {
   const groups: Record<string, WidgetDefinition[]> = {};

@@ -1,9 +1,12 @@
 /**
- * The widget marketplace catalog. This is the single source of truth that both
- * the marketplace UI and the dashboard engine read — adding a widget is one entry
- * here plus its component file.
+ * The widget marketplace catalog. The pure metadata (which widgets exist, sizes,
+ * config contracts) lives in the React-free `src/shared/widgets.ts` so the
+ * standalone MCP server can read it too; here we attach the renderer-only bits —
+ * an icon and a React component — to each entry. Adding a widget is one entry in
+ * the shared metadata plus an icon + component below.
  */
 
+import type { ComponentType } from 'react';
 import {
   RiBankLine,
   RiBarChart2Line,
@@ -16,7 +19,8 @@ import {
   RiScales3Line,
   RiWallet3Line,
 } from '@remixicon/react';
-import type { WidgetDefinition } from './types';
+import { WIDGET_META } from '../../shared/widgets';
+import type { WidgetDefinition, WidgetProps } from './types';
 import { NetWorthWidget } from './NetWorth';
 import { AccountsListWidget } from './AccountsList';
 import { AccountBalancesWidget } from './AccountBalances';
@@ -28,102 +32,54 @@ import { SyncStatusWidget } from './SyncStatus';
 import { BenchmarkComparisonWidget } from './BenchmarkComparison';
 import { MarketSeriesChartWidget } from './MarketSeriesChart';
 
-export const WIDGETS: WidgetDefinition[] = [
-  {
-    type: 'net-worth',
-    title: 'Net Worth',
-    description: 'Total balance across all accounts, grouped by currency.',
-    category: 'Overview',
-    icon: RiWallet3Line,
-    defaultSize: { w: 4, h: 3, minW: 3, minH: 2 },
-    component: NetWorthWidget,
-  },
-  {
-    type: 'sync-status',
-    title: 'Sync Status',
-    description: 'Backend connectivity and the most recent sync run.',
-    category: 'Overview',
-    icon: RiRefreshLine,
-    defaultSize: { w: 4, h: 3, minW: 3, minH: 2 },
-    component: SyncStatusWidget,
-  },
-  {
-    type: 'accounts-list',
-    title: 'Accounts',
-    description: 'Every account with its current balance.',
-    category: 'Accounts',
-    icon: RiBankLine,
-    defaultSize: { w: 4, h: 6, minW: 3, minH: 3 },
-    component: AccountsListWidget,
-  },
-  {
-    type: 'account-balances',
-    title: 'Account Balances',
-    description: 'Bar chart comparing balances across accounts.',
-    category: 'Accounts',
-    icon: RiBarChart2Line,
-    defaultSize: { w: 4, h: 6, minW: 3, minH: 4 },
-    component: AccountBalancesWidget,
-  },
-  {
-    type: 'transactions',
-    title: 'Transactions',
-    description: 'The most recent transactions across all accounts.',
-    category: 'Activity',
-    icon: RiListCheck,
-    defaultSize: { w: 6, h: 7, minW: 4, minH: 4 },
-    component: TransactionsWidget,
-    configFields: [
-      { key: 'limit', label: 'Rows shown', type: 'number', default: 40, help: 'How many recent transactions to list.' },
-    ],
-  },
-  {
-    type: 'spend-by-label',
-    title: 'Spending Breakdown',
-    description: 'Outflow grouped by your most-used label (or payee).',
-    category: 'Spending',
-    icon: RiPieChart2Line,
-    defaultSize: { w: 4, h: 6, minW: 3, minH: 4 },
-    component: SpendByLabelWidget,
-  },
-  {
-    type: 'cashflow',
-    title: 'Cash Flow',
-    description: 'Money in vs. out per month over the last six months.',
-    category: 'Spending',
-    icon: RiExchangeFundsLine,
-    defaultSize: { w: 8, h: 5, minW: 4, minH: 4 },
-    component: CashflowWidget,
-  },
-  {
-    type: 'activity-feed',
-    title: 'Live Activity',
-    description: 'A live feed of change events streamed from kasas.',
-    category: 'Activity',
-    icon: RiPulseLine,
-    defaultSize: { w: 4, h: 6, minW: 3, minH: 3 },
-    component: ActivityFeedWidget,
-  },
-  {
-    type: 'benchmark-comparison',
-    title: 'Benchmark Comparison',
-    description: 'A market series as "growth of $10k" alongside an account balance, for context.',
-    category: 'Market',
-    icon: RiScales3Line,
-    defaultSize: { w: 8, h: 5, minW: 4, minH: 4 },
-    component: BenchmarkComparisonWidget,
-  },
-  {
-    type: 'market-series',
-    title: 'Market Series',
-    description:
-      'Overlay one or more market series on one chart — two or more compare as "growth of $10k". Toggle lines with checkboxes.',
-    category: 'Market',
-    icon: RiLineChartLine,
-    defaultSize: { w: 6, h: 5, minW: 4, minH: 3 },
-    component: MarketSeriesChartWidget,
-  },
-];
+/** Icon per widget type, keyed to the shared metadata. */
+const ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  'net-worth': RiWallet3Line,
+  'sync-status': RiRefreshLine,
+  'accounts-list': RiBankLine,
+  'account-balances': RiBarChart2Line,
+  transactions: RiListCheck,
+  'spend-by-label': RiPieChart2Line,
+  cashflow: RiExchangeFundsLine,
+  'activity-feed': RiPulseLine,
+  'benchmark-comparison': RiScales3Line,
+  'market-series': RiLineChartLine,
+};
+
+/** React component per widget type, keyed to the shared metadata. */
+const COMPONENTS: Record<string, ComponentType<WidgetProps>> = {
+  'net-worth': NetWorthWidget,
+  'sync-status': SyncStatusWidget,
+  'accounts-list': AccountsListWidget,
+  'account-balances': AccountBalancesWidget,
+  transactions: TransactionsWidget,
+  'spend-by-label': SpendByLabelWidget,
+  cashflow: CashflowWidget,
+  'activity-feed': ActivityFeedWidget,
+  'benchmark-comparison': BenchmarkComparisonWidget,
+  'market-series': MarketSeriesChartWidget,
+};
+
+// Metadata lives in src/shared/widgets.ts (so the MCP server can read it without
+// React), while icons + components are attached here. The two can drift: a widget
+// added to WIDGET_META but missing from ICONS/COMPONENTS would build an entry with
+// `undefined` icon/component (Record index access isn't undefined-checked) that
+// crashes when rendered. Drop and report any such entry so the rest still works.
+const built = WIDGET_META.map((meta) => ({
+  ...meta,
+  icon: ICONS[meta.type],
+  component: COMPONENTS[meta.type],
+}));
+
+const incomplete = built.filter((w) => !w.icon || !w.component);
+if (incomplete.length) {
+  console.error(
+    '[widgets] missing icon/component in registry.ts for:',
+    incomplete.map((w) => w.type).join(', '),
+  );
+}
+
+export const WIDGETS: WidgetDefinition[] = built.filter((w) => w.icon && w.component);
 
 export const widgetMap: Record<string, WidgetDefinition> = Object.fromEntries(
   WIDGETS.map((w) => [w.type, w]),

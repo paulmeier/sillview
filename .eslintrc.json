@@ -14,6 +14,13 @@
     "plugin:react-hooks/recommended"
   ],
   "parser": "@typescript-eslint/parser",
+  "settings": {
+    "//": "The MCP SDK ships deep subpaths via an exports map the default import resolver can't follow; mark them resolvable so import/no-unresolved doesn't false-positive.",
+    "import/core-modules": [
+      "@modelcontextprotocol/sdk/server/mcp.js",
+      "@modelcontextprotocol/sdk/server/stdio.js"
+    ]
+  },
   "rules": {
     "@typescript-eslint/no-unused-vars": [
       "warn",
