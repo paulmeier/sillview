@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RiCloseLine, RiEqualizerLine } from '@remixicon/react';
 import { Card } from '../components/tremor/Card';
 import { Modal } from '../components/ui/Modal';
@@ -7,6 +7,12 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { widgetMap } from '../widgets/registry';
 import { useDashboards, type WidgetInstance } from '../store/dashboards';
 import type { WidgetDefinition } from '../widgets/types';
+import { validateWidgetConfig } from '../../shared/widgets';
+import {
+  deriveConfigInputs,
+  initConfigDraft,
+  parseConfigDraft,
+} from '../../shared/widget-config-form';
 import { cx } from '../lib/utils';
 
 const inputClass =
@@ -24,14 +30,26 @@ function ConfigDialog({
   onClose: () => void;
 }) {
   const update = useDashboards((s) => s.updateWidgetConfig);
-  const [draft, setDraft] = useState<Record<string, unknown>>(() => {
-    const init: Record<string, unknown> = {};
-    for (const f of def.configFields ?? []) init[f.key] = instance.config?.[f.key] ?? f.default ?? '';
-    return init;
-  });
+  // Prefer hand-authored configFields; fall back to deriving inputs from the
+  // authoritative configSpec so any config-bearing widget is editable here.
+  const inputs = useMemo(() => deriveConfigInputs(def), [def]);
+  const [draft, setDraft] = useState<Record<string, string>>(() =>
+    initConfigDraft(inputs, instance.config),
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const setField = (key: string, value: string) =>
+    setDraft((d) => ({ ...d, [key]: value }));
 
   const save = () => {
-    update(instance.id, draft);
+    const next = parseConfigDraft(inputs, draft);
+    const merged = { ...instance.config, ...next };
+    const result = validateWidgetConfig(def.type, merged);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    update(instance.id, next);
     onClose();
   };
 
@@ -53,13 +71,16 @@ function ConfigDialog({
       }
     >
       <div className="space-y-3">
-        {(def.configFields ?? []).map((f) => (
+        {inputs.map((f) => (
           <label key={f.key} className="block">
-            <span className="mb-1 block text-xs font-medium text-slate-400">{f.label}</span>
-            {f.type === 'select' ? (
+            <span className="mb-1 block text-xs font-medium text-slate-400">
+              {f.label}
+              {f.required && <span className="text-rose-400"> *</span>}
+            </span>
+            {f.kind === 'select' ? (
               <select
-                value={String(draft[f.key] ?? '')}
-                onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                value={draft[f.key] ?? ''}
+                onChange={(e) => setField(f.key, e.target.value)}
                 className={inputClass}
               >
                 {(f.options ?? []).map((o) => (
@@ -70,15 +91,21 @@ function ConfigDialog({
               </select>
             ) : (
               <input
-                type={f.type === 'number' ? 'number' : 'text'}
-                value={String(draft[f.key] ?? '')}
-                onChange={(e) => setDraft((d) => ({ ...d, [f.key]: e.target.value }))}
+                type={f.kind === 'number' ? 'number' : 'text'}
+                value={draft[f.key] ?? ''}
+                onChange={(e) => setField(f.key, e.target.value)}
+                placeholder={f.kind === 'list' ? 'comma-separated' : undefined}
                 className={inputClass}
               />
             )}
             {f.help && <span className="mt-1 block text-xs text-slate-500">{f.help}</span>}
           </label>
         ))}
+        {error && (
+          <p className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+            {error}
+          </p>
+        )}
       </div>
     </Modal>
   );
@@ -100,7 +127,8 @@ export function WidgetHost({ instance }: { instance: WidgetInstance }) {
 
   const Icon = def.icon;
   const Body = def.component;
-  const configurable = (def.configFields?.length ?? 0) > 0;
+  const configurable =
+    (def.configFields?.length ?? 0) > 0 || (def.configSpec?.length ?? 0) > 0;
 
   return (
     <Card className="flex h-full flex-col overflow-hidden">
