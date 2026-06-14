@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/paulmeier/sillview/compare/v0.9.2...v0.9.3) (2026-06-14)
+
+
+### Bug Fixes
+
+* don't bounce kasas on save when nothing changed; make restart work in daemon mode ([#49](https://github.com/paulmeier/sillview/issues/49)) ([4a06282](https://github.com/paulmeier/sillview/commit/4a0628278594906a6e5d09a769c9b6c8ba327c94))
+
 ## [0.9.2](https://github.com/paulmeier/sillview/compare/v0.9.1...v0.9.2) (2026-06-14)
 
 
