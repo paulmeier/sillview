@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/paulmeier/sillview/compare/v0.9.3...v0.10.0) (2026-06-14)
+
+
+### Features
+
+* add MCP server for authoring dashboards and widgets ([#51](https://github.com/paulmeier/sillview/issues/51)) ([146e2d4](https://github.com/paulmeier/sillview/commit/146e2d4b63da684eda5702ec46ac4e969dffb912))
+
 ## [0.9.3](https://github.com/paulmeier/sillview/compare/v0.9.2...v0.9.3) (2026-06-14)
 
 
