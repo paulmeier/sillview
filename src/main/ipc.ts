@@ -15,7 +15,7 @@ import { kasasRequest } from './kasas/http';
 import { MOCK, mockKasasRequest } from './kasas/mock';
 import { EventStream } from './kasas/sse';
 import { loadConnection, saveConnection } from './storage/settings';
-import { loadDashboards, saveDashboards } from './storage/dashboards';
+import { loadDashboards, saveDashboards, watchDashboards } from './storage/dashboards';
 import { KasasManager } from './kasas/manager';
 import { kasasDataDir } from './kasas/paths';
 
@@ -85,6 +85,9 @@ export async function registerIpc(): Promise<void> {
   ipcMain.handle(IpcChannels.dashboardsSave, (_e, contents: string) =>
     saveDashboards(contents),
   );
+  // Pick up dashboards.json written by an external editor (the MCP server) and
+  // tell the renderer to reload. The app's own saves are filtered out.
+  watchDashboards(() => broadcast(IpcChannels.dashboardsChanged, undefined));
 
   // --- managed kasas backend --------------------------------------------
   ipcMain.handle(IpcChannels.backendGetSettings, () => manager.settings);

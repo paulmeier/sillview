@@ -1,9 +1,12 @@
 # Building a Widget
 
-Adding a widget is deliberately small: **one catalog entry plus a component
-file**. The catalog (`src/renderer/widgets/registry.ts`) is the single source of
-truth both the [marketplace](../features/widgets.md) and the dashboard engine
-read.
+Adding a widget is deliberately small: **one metadata entry, one component file,
+and two lines wiring them together**. The pure metadata lives in
+`src/shared/widgets.ts` (React-free, so the
+[MCP server](../../README.md#mcp-server--let-an-llm-build-dashboards) can read and
+validate it); the renderer's `src/renderer/widgets/registry.ts` attaches the icon
+and component. Together they're the single source both the
+[marketplace](../features/widgets.md) and the dashboard engine read.
 
 ## 1. Write the component
 
@@ -36,7 +39,7 @@ Keep two rules in mind:
 
 ## 2. Register it
 
-Add one `WidgetDefinition` to `src/renderer/widgets/registry.ts`:
+First add one `WidgetMeta` entry to `WIDGET_META` in `src/shared/widgets.ts`:
 
 ```ts
 {
@@ -44,20 +47,32 @@ Add one `WidgetDefinition` to `src/renderer/widgets/registry.ts`:
   title: 'My Widget',
   description: 'One line shown in the marketplace.',
   category: 'Overview',              // groups it in the marketplace
-  icon: RiStarLine,                  // a @remixicon/react icon
   defaultSize: { w: 4, h: 3, minW: 3, minH: 2 },  // grid units
-  component: MyWidget,
+  // configSpec: [ ... ]             // only if the widget reads config (see below)
 }
 ```
+
+Then attach the icon + component by adding your `type` to the `ICONS` and
+`COMPONENTS` maps in `src/renderer/widgets/registry.ts`:
+
+```ts
+const ICONS = { /* ... */ 'my-widget': RiStarLine };       // @remixicon/react
+const COMPONENTS = { /* ... */ 'my-widget': MyWidget };
+```
+
+(Forget one and the registry logs an error and drops the widget rather than
+crashing — so check the console if a new widget doesn't appear.)
 
 | Field | Notes |
 | --- | --- |
 | `type` | Stable, unique id. It's written into saved dashboards — don't rename it later. |
-| `category` | An existing category (Overview, Accounts, Activity, Spending) or a new one. |
-| `icon` | A Remix icon component from `@remixicon/react`. |
+| `category` | An existing category (Overview, Accounts, Activity, Spending, Market) or a new one. |
 | `defaultSize` | Drop size in grid units; `minW`/`minH` stop it collapsing too small. |
+| `configFields` | Optional — knobs rendered in the in-app Configure dialog. |
+| `configSpec` | Optional but **required to be configurable from the MCP server** — the authoritative list of config keys + accepted types your component reads. Without it, the MCP server treats the widget as taking no config. |
 
-That's it — the marketplace lists it and the grid can place it.
+That's it — the marketplace lists it, the grid can place it, and (with a
+`configSpec`) an assistant can author it.
 
 ## 3. See it
 

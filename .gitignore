@@ -94,6 +94,9 @@ out/
 # Bundled kasas binary — produced by `npm run sync:kasas`, too large for git
 resources/bin/
 
+# Bundled sillview MCP server — produced by `npm run build:mcp`
+/dist-mcp/
+
 # MkDocs build output (the rendered site is published by CI to the `docs` branch;
 # source lives in /docs and mkdocs.yml)
 /site/

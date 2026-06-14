@@ -22,7 +22,15 @@ export function App() {
     void useConnection.getState().init();
     const finish = () => useDashboards.getState().finishHydration();
     if (useDashboards.persist.hasHydrated()) finish();
-    return useDashboards.persist.onFinishHydration(finish);
+    const offHydration = useDashboards.persist.onFinishHydration(finish);
+    // Reload when an external editor (the MCP server) rewrites dashboards.json.
+    const offChange = window.api.dashboards.onChange(() => {
+      void useDashboards.getState().reloadFromDisk();
+    });
+    return () => {
+      offHydration?.();
+      offChange();
+    };
   }, []);
 
   if (!hydrated) return <Splash />;

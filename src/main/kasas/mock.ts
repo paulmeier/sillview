@@ -14,6 +14,7 @@
  */
 
 import type { KasasRequest, KasasResult } from '../../shared/ipc';
+import { serializeDashboardsFile, type Dashboard } from '../../shared/dashboards';
 import type {
   Account,
   AccountInput,
@@ -704,7 +705,7 @@ function marketSeriesList() {
 
 /** Serialized saved-dashboards store seeding the mock "Investments" board. */
 export function mockDashboardsFile(): string {
-  const dashboard = {
+  const dashboard: Dashboard = {
     id: 'dash_investments',
     name: 'Investments',
     widgets: [
@@ -720,10 +721,7 @@ export function mockDashboardsFile(): string {
       { i: 'mw_spy_vs_brokerage', x: 7, y: 0, w: 5, h: 6, minW: 4, minH: 4 },
     ],
   };
-  return JSON.stringify({
-    state: { dashboards: [dashboard], activeId: dashboard.id },
-    version: 0,
-  });
+  return serializeDashboardsFile([dashboard], dashboard.id);
 }
 
 function route(req: KasasRequest): KasasResult {
