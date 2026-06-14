@@ -68,12 +68,29 @@ async function bootout(): Promise<void> {
   await execFileP('launchctl', ['bootout', `gui/${uid()}/${LABEL}`]);
 }
 
+const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Poll until the agent is fully booted out. `launchctl bootout` is asynchronous
+ * — launchd tears the job down in the background — so a bootstrap fired right
+ * after it can race the dying instance (which still holds the port) and fail,
+ * leaving nothing loaded. Wait for the old job to disappear first.
+ */
+async function waitUntilInactive(timeoutMs = 5000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!(await isActive())) return;
+    await delay(200);
+  }
+}
+
 /** Write the plist and load it into launchd (replacing any stale instance). */
 export async function install(binary: string, configPath: string): Promise<void> {
   const p = plistPath();
   await fs.mkdir(path.dirname(p), { recursive: true });
   await fs.writeFile(p, renderPlist(binary, configPath), 'utf8');
   await bootout().catch(() => undefined); // ignore "not loaded"
+  await waitUntilInactive(); // don't let bootstrap race the dying old instance
   await execFileP('launchctl', ['bootstrap', `gui/${uid()}`, p]);
 }
 
@@ -88,7 +105,16 @@ export async function uninstall(): Promise<void> {
 export async function reload(): Promise<void> {
   const p = plistPath();
   if (!existsSync(p)) return;
-  await bootout().catch(() => undefined);
+  // The plist itself is unchanged here — only config.toml did — so restart the
+  // running job in place. `kickstart -k` atomically kills and re-execs it
+  // (re-reading config.toml). Unlike bootout+bootstrap there's no window where
+  // the daemon is unloaded and no race where bootstrap fires before the old
+  // instance frees the port — which used to leave the daemon dead on save.
+  if (await isActive()) {
+    await execFileP('launchctl', ['kickstart', '-k', `gui/${uid()}/${LABEL}`]);
+    return;
+  }
+  // Not loaded (e.g. it was booted out from under us) — load it fresh.
   await execFileP('launchctl', ['bootstrap', `gui/${uid()}`, p]);
 }
 
