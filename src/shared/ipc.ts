@@ -9,6 +9,7 @@
  */
 
 import type { KasasEvent } from './kasas-types';
+import type { InstalledWidget, WidgetRegistryResult } from './widget-registry';
 
 /** Where to reach kasas, and the bearer token (empty in token-less dev). */
 export interface ConnectionConfig {
@@ -135,6 +136,11 @@ export const IpcChannels = {
   eventsStop: 'events:stop',
   dashboardsLoad: 'dashboards:load',
   dashboardsSave: 'dashboards:save',
+  // widget marketplace (renderer -> main)
+  widgetsRegistry: 'widgets:registry',
+  widgetsInstalled: 'widgets:installed',
+  widgetsInstall: 'widgets:install',
+  widgetsUninstall: 'widgets:uninstall',
   systemOpenExternal: 'system:openExternal',
   // managed backend (renderer -> main)
   backendGetSettings: 'backend:getSettings',
@@ -152,6 +158,7 @@ export const IpcChannels = {
   kasasEvent: 'kasas:event',
   eventStatus: 'events:status',
   dashboardsChanged: 'dashboards:changed',
+  widgetsChanged: 'widgets:changed',
   backendStatusEvent: 'backend:statusEvent',
   backendLogEvent: 'backend:logEvent',
   backendUpdateEvent: 'backend:updateEvent',
@@ -186,6 +193,21 @@ export interface SillviewApi {
     /**
      * Subscribe to external writes of dashboards.json (e.g. by the MCP server).
      * The app's own saves do not fire this. Returns an unsubscribe fn.
+     */
+    onChange(cb: () => void): () => void;
+  };
+  widgets: {
+    /** Fetch the community widget registry (cached; pass force to refresh). */
+    registry(force?: boolean): Promise<WidgetRegistryResult>;
+    /** The locally installed widgets (seeded with a recommended core on first run). */
+    installed(): Promise<InstalledWidget[]>;
+    /** Install a widget by slug; returns the new installed list. */
+    install(slug: string): Promise<InstalledWidget[]>;
+    /** Uninstall a widget by slug; returns the new installed list. */
+    uninstall(slug: string): Promise<InstalledWidget[]>;
+    /**
+     * Subscribe to external writes of installed-widgets.json (e.g. by the MCP
+     * server). The app's own saves do not fire this. Returns an unsubscribe fn.
      */
     onChange(cb: () => void): () => void;
   };

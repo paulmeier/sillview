@@ -28,6 +28,7 @@ follows the same skeleton so reviewers know where to look:
 | [0002](0002-backend-capability-detection-and-plugin-activation.md) | Backend-gated widgets: capability detection and plugin activation | Proposed |
 | [0003](0003-third-party-code-widget-sandboxing.md) | Third-party code widgets: the sandbox and trust model | Proposed (deferred) |
 | [0004](0004-external-market-data-ownership-and-storage.md) | External market data: ownership, storage, and access | Proposed |
+| [0005](0005-widget-marketplace-and-install-gating.md) | Widget marketplace: an external registry with install-gating | Accepted |
 
 ## Reading order
 

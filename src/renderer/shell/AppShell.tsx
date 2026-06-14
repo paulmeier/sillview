@@ -1,6 +1,6 @@
 /** The routed layout: sidebar + the active page, with the global Settings dialog. */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { RiErrorWarningLine } from '@remixicon/react';
 import { Sidebar } from './Sidebar';
@@ -10,6 +10,7 @@ import { SourceDetail } from '../pages/SourceDetail';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { useConnection } from '../store/connection';
 import { useBackend } from '../store/backend';
+import { useWidgets } from '../store/widgets';
 
 /** Warn when a remote (external) kasas reports no auth — anyone reachable can read/write. */
 function UnsecuredBanner({ onSecure }: { onSecure: () => void }) {
@@ -38,6 +39,10 @@ function UnsecuredBanner({ onSecure }: { onSecure: () => void }) {
 
 export function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Load the installed-widgets list (and registry) once, and subscribe to external
+  // changes, so the "Add widget" panel reflects what's installed app-wide.
+  useEffect(() => useWidgets.getState().init(), []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0b0f17] text-slate-200">

@@ -39,6 +39,13 @@ import type {
 } from '../shared/kasas-types';
 import { findDashboard, mutate, readState } from './store';
 import { kasasGet, resolveConnection } from './kasas';
+import {
+  installedTypes,
+  installWidget,
+  listAvailable,
+  readInstalled,
+  uninstallWidget,
+} from './installed';
 
 const SERVER_NAME = 'sillview';
 const SERVER_VERSION = '0.1.0';
@@ -101,16 +108,18 @@ server.registerTool(
   {
     title: 'List widget types',
     description:
-      'List every widget that can be placed on a dashboard, with its default grid size and config contract. Call this before add_widget so you use a valid `type` and the right `config` keys.',
+      'List every widget this app build can render, with its default grid size, config contract, and whether it is installed. Only an INSTALLED widget can be added to a dashboard — install one with install_widget first (or browse the registry with list_available_widgets). Call this before add_widget so you use a valid, installed `type` and the right `config` keys.',
     inputSchema: {},
   },
-  async (): Promise<ToolResult> =>
-    ok(
+  async (): Promise<ToolResult> => {
+    const installed = await installedTypes();
+    return ok(
       WIDGET_META.map((m) => ({
         type: m.type,
         title: m.title,
         description: m.description,
         category: m.category,
+        installed: installed.has(m.type),
         defaultSize: m.defaultSize,
         config:
           m.configSpec && m.configSpec.length
@@ -122,7 +131,77 @@ server.registerTool(
               }))
             : 'none',
       })),
-    ),
+    );
+  },
+);
+
+// --- Marketplace (install widgets before adding them) ---------------------
+
+server.registerTool(
+  'list_available_widgets',
+  {
+    title: 'List available widgets',
+    description:
+      'Browse the community widget registry: every widget that can be installed, with its version, category, tags, and whether it is already installed. Use install_widget to install one before adding it to a dashboard.',
+    inputSchema: {},
+  },
+  async (): Promise<ToolResult> => {
+    let catalog;
+    try {
+      catalog = await listAvailable();
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : String(err));
+    }
+    const installed = new Set((await readInstalled()).map((w) => w.slug));
+    return ok({
+      widgets: catalog.map((w) => ({
+        slug: w.name,
+        widget_type: w.widget_type,
+        version: w.version,
+        description: w.description,
+        category: w.category,
+        tags: w.tags,
+        author: w.author,
+        installed: installed.has(w.name),
+      })),
+    });
+  },
+);
+
+server.registerTool(
+  'install_widget',
+  {
+    title: 'Install widget',
+    description:
+      'Install a widget from the registry by its slug so it can be added to a dashboard. Idempotent (re-installing updates the recorded version). The running app picks this up live.',
+    inputSchema: { slug: z.string().describe('Widget slug, e.g. "net-worth" (see list_available_widgets).') },
+  },
+  async ({ slug }): Promise<ToolResult> => {
+    try {
+      const installed = await installWidget(slug);
+      return ok({ installed: installed.map((w) => w.slug) });
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : String(err));
+    }
+  },
+);
+
+server.registerTool(
+  'uninstall_widget',
+  {
+    title: 'Uninstall widget',
+    description:
+      'Uninstall a widget by its slug. Existing dashboard tiles of that type degrade to a "not installed" placeholder until it is reinstalled.',
+    inputSchema: { slug: z.string().describe('Widget slug to uninstall.') },
+  },
+  async ({ slug }): Promise<ToolResult> => {
+    try {
+      const installed = await uninstallWidget(slug);
+      return ok({ installed: installed.map((w) => w.slug) });
+    } catch (err) {
+      return fail(err instanceof Error ? err.message : String(err));
+    }
+  },
 );
 
 // --- Read -----------------------------------------------------------------
@@ -186,7 +265,15 @@ server.registerTool(
   async ({ name, activate, widgets }): Promise<ToolResult> => {
     const cleanName = name.trim();
     if (!cleanName) return fail('Dashboard name must not be empty.');
-    // Validate every widget up front so we never write a partial dashboard.
+    // Gate on installation, then validate every widget up front so we never write a
+    // partial dashboard.
+    const installed = await installedTypes();
+    const notInstalled = (widgets ?? []).map((w) => w.type).filter((t) => !installed.has(t));
+    if (notInstalled.length > 0) {
+      return fail(
+        `These widget types are not installed: ${[...new Set(notInstalled)].join(', ')}. Install them first with install_widget.`,
+      );
+    }
     let built: WidgetInstance[];
     try {
       built = (widgets ?? []).map((w) => buildWidget(w.type, w.config));
@@ -231,6 +318,12 @@ server.registerTool(
     },
   },
   async ({ dashboard, type, config }): Promise<ToolResult> => {
+    const installed = await installedTypes();
+    if (!installed.has(type)) {
+      return fail(
+        `Widget type "${type}" is not installed. Install it first with install_widget (or in the app's Widget Marketplace).`,
+      );
+    }
     let widget: WidgetInstance;
     try {
       widget = buildWidget(type, config);
