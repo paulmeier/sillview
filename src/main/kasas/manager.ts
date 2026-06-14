@@ -115,10 +115,19 @@ export class KasasManager {
     }
   }
 
-  private async writeConfig(): Promise<string> {
+  /** Render config.toml, writing it only when its contents actually change. */
+  private async writeConfig(): Promise<{ path: string; changed: boolean }> {
     const cfgPath = kasasConfigPath();
-    await fs.writeFile(cfgPath, renderConfigToml(this.state.settings, this.state.token), 'utf8');
-    return cfgPath;
+    const next = renderConfigToml(this.state.settings, this.state.token);
+    let current = '';
+    try {
+      current = await fs.readFile(cfgPath, 'utf8');
+    } catch {
+      /* not written yet */
+    }
+    const changed = current !== next;
+    if (changed) await fs.writeFile(cfgPath, next, 'utf8');
+    return { path: cfgPath, changed };
   }
 
   /** Start the backend according to current settings. */
@@ -140,7 +149,7 @@ export class KasasManager {
       this.setState('crashed', 'kasas binary not bundled — run `npm run sync:kasas`');
       return this.status();
     }
-    const cfgPath = await this.writeConfig();
+    const { path: cfgPath } = await this.writeConfig();
 
     this.stopping = false;
     this.ready = false;
@@ -275,6 +284,15 @@ export class KasasManager {
   }
 
   async restart(): Promise<KasasStatus> {
+    // In background mode the daemon — not a child — owns the process, so a
+    // stop()/start() pair is a no-op that never actually restarts kasas. Reload
+    // the daemon (restart-in-place) so a "Restart kasas" takes effect and
+    // re-reads config.toml.
+    if (this.state.settings.background && daemon.supported) {
+      await daemon.reload();
+      void this.waitForReady();
+      return this.status();
+    }
     await this.stop();
     this.restartAttempts = 0;
     return this.start();
@@ -293,17 +311,20 @@ export class KasasManager {
       return this.status();
     }
 
-    await this.writeConfig();
+    const { changed } = await this.writeConfig();
 
     if (next.background !== prev.background) {
       return this.setBackground(next.background);
     }
+    // The backend only reads config.toml; if nothing in it changed there's
+    // nothing to apply — don't bounce kasas. This is the common case when the
+    // user only edited kasas's own (API-backed) settings, not sillview's.
     if (next.background) {
-      await daemon.reload();
+      if (changed) await daemon.reload();
       void this.waitForReady();
       return this.status();
     }
-    return this.restart();
+    return changed ? this.restart() : this.start();
   }
 
   /** Install/remove the persistent daemon and adjust the child accordingly. */
@@ -331,7 +352,7 @@ export class KasasManager {
       this.setState('crashed', 'kasas binary not bundled — run `npm run sync:kasas`');
       return this.status();
     }
-    const cfgPath = await this.writeConfig();
+    const { path: cfgPath } = await this.writeConfig();
 
     if (enabled) {
       await this.stop(); // free the port from the managed child
