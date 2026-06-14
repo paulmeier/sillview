@@ -41,9 +41,18 @@ export async function resolveConnection(): Promise<KasasConnection | null> {
     // No backend.json yet (app never launched). Fall back to defaults; the
     // request will simply fail-soft if kasas isn't reachable.
   }
-  const port = parsed.settings?.port ?? 8080;
+  // Sanitize the port read from backend.json before it reaches the request URL:
+  // coerce to a bounded TCP port integer (default 8080 on anything invalid). The
+  // host is fixed to loopback, so this fully constrains the file-derived part of
+  // the destination — and tolerates a corrupt backend.json.
   const token = envToken ?? parsed.token ?? '';
-  return { baseUrl: `http://127.0.0.1:${port}`, token };
+  return { baseUrl: `http://127.0.0.1:${toPort(parsed.settings?.port)}`, token };
+}
+
+/** Coerce an untrusted value to a valid TCP port (1-65535), else the default. */
+function toPort(value: unknown): number {
+  const port = typeof value === 'number' ? value : Number(value);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : 8080;
 }
 
 export interface KasasFetch<T> {
