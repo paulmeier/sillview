@@ -33,17 +33,25 @@ function file(): string {
 /** The contents we last read or wrote, so the watcher can skip our own saves. */
 let lastSeen: string | null = null;
 
-/** Load the installed widgets, seeding the recommended core on first run. */
+/**
+ * Load the installed widgets, returning the recommended core on first run.
+ *
+ * Seeding does NOT write here: the file is created on the first install/uninstall.
+ * That keeps a read off the write path (no two-process race, no watcher re-trigger)
+ * and — critically — means a *transient* read error can never clobber a real
+ * install list with the seed. Only a genuinely missing file (ENOENT) seeds; any
+ * other error propagates so the caller surfaces it instead of silently resetting.
+ */
 export async function loadInstalled(): Promise<InstalledWidget[]> {
   try {
     const contents = await fs.readFile(file(), 'utf8');
     lastSeen = contents;
     return parseInstalledFile(contents);
-  } catch {
-    // First run: seed the recommended core set and persist it so the file exists.
-    const seeded = seedInstalled(new Date().toISOString());
-    await saveInstalled(seeded);
-    return seeded;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return seedInstalled(new Date().toISOString());
+    }
+    throw err;
   }
 }
 

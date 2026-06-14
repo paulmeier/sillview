@@ -26,6 +26,34 @@ export function registryUrl(): string {
   return process.env.SILLVIEW_WIDGET_REGISTRY_URL || DEFAULT_REGISTRY_URL;
 }
 
+/**
+ * Read a response body to a string, aborting once it exceeds `max` bytes so a
+ * response WITHOUT a content-length (chunked) can't buffer unbounded. Falls back to
+ * `res.text()` when the body isn't a stream (e.g. a mocked Response in tests).
+ */
+async function readCapped(res: Response, max: number): Promise<string | null> {
+  const reader = res.body?.getReader?.();
+  if (!reader) {
+    const text = await res.text();
+    return text.length > max ? null : text;
+  }
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) {
+      received += value.byteLength;
+      if (received > max) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 let cached: RegistryIndex | null = null;
 
 /** The last successfully fetched index, if any (no network). */
@@ -55,8 +83,8 @@ export async function fetchRegistry(force = false): Promise<WidgetRegistryResult
 
     const declared = Number(res.headers.get('content-length') ?? 0);
     if (declared && declared > MAX_BYTES) return { ok: false, error: 'registry is too large' };
-    const text = await res.text();
-    if (text.length > MAX_BYTES) return { ok: false, error: 'registry is too large' };
+    const text = await readCapped(res, MAX_BYTES);
+    if (text === null) return { ok: false, error: 'registry is too large' };
 
     let data: RegistryIndex;
     try {

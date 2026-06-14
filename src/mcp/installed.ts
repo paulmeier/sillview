@@ -31,9 +31,14 @@ export async function readInstalled(): Promise<InstalledWidget[]> {
   try {
     const raw = await fs.readFile(installedPath(), 'utf8');
     return parseInstalledFile(raw);
-  } catch {
-    // Match the app's first-run behavior so the MCP sees the same seeded set.
-    return seedInstalled(new Date().toISOString());
+  } catch (err) {
+    // Only a missing file seeds (matching the app's first-run behavior). A transient
+    // read error must propagate, not return the seed — install/uninstall write this
+    // list back, so silently seeding could clobber the user's real installs.
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return seedInstalled(new Date().toISOString());
+    }
+    throw err;
   }
 }
 

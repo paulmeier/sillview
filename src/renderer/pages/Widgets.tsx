@@ -139,10 +139,15 @@ export function Widgets() {
     return CATEGORY_ORDER.filter((c) => present.has(c));
   }, [registry]);
 
+  // If the selected category no longer has any widgets (e.g. after an uninstall or a
+  // registry refresh), fall back to "All" so the user isn't stranded on empty results.
+  const effectiveCategory =
+    category === 'All' || (categories as string[]).includes(category) ? category : 'All';
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return registry.filter((w) => {
-      if (category !== 'All' && w.category !== category) return false;
+      if (effectiveCategory !== 'All' && w.category !== effectiveCategory) return false;
       if (!q) return true;
       return (
         w.name.toLowerCase().includes(q) ||
@@ -151,7 +156,7 @@ export function Widgets() {
         w.tags.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [registry, query, category]);
+  }, [registry, query, effectiveCategory]);
 
   const grouped = useMemo(() => {
     const groups: Record<string, RegistryWidget[]> = {};
@@ -225,7 +230,7 @@ export function Widgets() {
                   onClick={() => setCategory(c)}
                   className={cx(
                     'rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
-                    category === c
+                    effectiveCategory === c
                       ? 'bg-blue-600 text-white'
                       : 'bg-white/5 text-slate-300 hover:bg-white/10',
                   )}

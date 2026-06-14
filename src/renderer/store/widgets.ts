@@ -71,12 +71,7 @@ export const useWidgets = create<WidgetsState>((set, get) => ({
   },
 }));
 
-/** A Set of installed widget slugs, for membership checks. */
-export function useInstalledSlugs(): Set<string> {
-  return useWidgets((s) => new Set(s.installed.map((w) => w.slug)));
-}
-
-/** A Set of installed widget *types*, for gating the Add-widget panel. */
-export function useInstalledTypes(): Set<string> {
-  return useWidgets((s) => new Set(s.installed.map((w) => w.widget_type)));
-}
+// NOTE: do NOT add a selector like `useWidgets((s) => new Set(...))`. Under zustand
+// v5 (useSyncExternalStore) a selector that allocates a fresh reference every call
+// fails the snapshot-stability check and infinite-loops. Derive Sets inside the
+// consuming component with useMemo over `installed` instead.

@@ -54,10 +54,15 @@ export function MarketplacePanel({
     [defs],
   );
 
+  // Fall back to "All" if the selected category no longer has installed widgets
+  // (e.g. the last one was uninstalled), so the panel never shows an empty filter.
+  const effectiveCategory =
+    category === 'All' || (categories as readonly string[]).includes(category) ? category : 'All';
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return defs.filter((d) => {
-      if (category !== 'All' && d.category !== category) return false;
+      if (effectiveCategory !== 'All' && d.category !== effectiveCategory) return false;
       if (!q) return true;
       return (
         d.title.toLowerCase().includes(q) ||
@@ -65,7 +70,7 @@ export function MarketplacePanel({
         d.category.toLowerCase().includes(q)
       );
     });
-  }, [defs, query, category]);
+  }, [defs, query, effectiveCategory]);
 
   const grouped = useMemo(() => {
     const groups: Record<string, WidgetDefinition[]> = {};
@@ -119,7 +124,7 @@ export function MarketplacePanel({
                     onClick={() => setCategory(c as WidgetCategory | 'All')}
                     className={cx(
                       'rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
-                      category === c
+                      effectiveCategory === c
                         ? 'bg-blue-600 text-white'
                         : 'bg-white/5 text-slate-300 hover:bg-white/10',
                     )}
