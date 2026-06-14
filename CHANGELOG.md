@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/paulmeier/sillview/compare/v0.11.0...v0.12.0) (2026-06-14)
+
+
+### Features
+
+* configure any widget from the Configure dialog (configSpec-driven) ([#55](https://github.com/paulmeier/sillview/issues/55)) ([c6e5128](https://github.com/paulmeier/sillview/commit/c6e5128651aae40e69879ef9b2ea41c8b326822f))
+
 ## [0.11.0](https://github.com/paulmeier/sillview/compare/v0.10.0...v0.11.0) (2026-06-14)
 
 
