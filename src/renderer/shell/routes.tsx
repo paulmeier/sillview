@@ -8,6 +8,7 @@
 
 import type { ComponentType, ReactNode } from 'react';
 import {
+  RiAppsLine,
   RiArrowLeftRightLine,
   RiBankLine,
   RiGitBranchLine,
@@ -21,6 +22,7 @@ import {
   RiStore2Line,
 } from '@remixicon/react';
 import { Dashboards } from '../pages/Dashboards';
+import { Widgets } from '../pages/Widgets';
 import { Sources } from '../pages/Sources';
 import { Transactions } from '../pages/Transactions';
 import { Accounts } from '../pages/Accounts';
@@ -47,6 +49,7 @@ export const GROUP_ORDER: NavGroup[] = ['Overview', 'Ledger', 'Configure', 'Plug
 
 export const ROUTES: NavRoute[] = [
   { path: '/', label: 'Dashboards', icon: RiLayoutGridLine, group: 'Overview', element: <Dashboards /> },
+  { path: '/widgets', label: 'Widget Marketplace', icon: RiAppsLine, group: 'Overview', element: <Widgets /> },
 
   { path: '/transactions', label: 'Transactions', icon: RiArrowLeftRightLine, group: 'Ledger', element: <Transactions /> },
   { path: '/accounts', label: 'Accounts', icon: RiBankLine, group: 'Ledger', element: <Accounts /> },

@@ -116,6 +116,7 @@ nav:
           - "ADR-0002 · Backend capability & activation": architecture/decisions/0002-backend-capability-detection-and-plugin-activation.md
           - "ADR-0003 · Code-widget sandboxing": architecture/decisions/0003-third-party-code-widget-sandboxing.md
           - "ADR-0004 · External market data": architecture/decisions/0004-external-market-data-ownership-and-storage.md
+          - "ADR-0005 · Widget marketplace": architecture/decisions/0005-widget-marketplace-and-install-gating.md
   - Features:
       - Dashboards & Widgets: features/dashboards.md
       - Widget Catalog: features/widgets.md

@@ -74,7 +74,24 @@ crashing — so check the console if a new widget doesn't appear.)
 That's it — the marketplace lists it, the grid can place it, and (with a
 `configSpec`) an assistant can author it.
 
-## 3. See it
+## 3. Publish it to the marketplace
+
+Widgets are now **install-gated**: the "Add widget" panel offers only widgets the
+user has installed from the [Widget Marketplace](../features/widgets.md), backed by
+the community registry repo
+[`sillview-widgets`](https://github.com/paulmeier/sillview-widgets) (see
+[ADR-0005](../architecture/decisions/0005-widget-marketplace-and-install-gating.md)).
+A widget's React code still ships with the app (above); the marketplace entry is the
+metadata that makes it **installable**.
+
+To list a new widget, add a `widgets/<slug>/widget.toml` to the `sillview-widgets`
+repo (a `kind = "builtin"` manifest whose `widget_type` is the `type` you registered
+here), run its gate (`npm run validate && npm run index`), and open a PR. CI verifies
+the manifest and that the committed `registry/index.json` is current. Offline (mock)
+development uses a fixture catalog **derived from `WIDGET_META`**, so a new widget is
+installable in `make mock` immediately, without touching the registry repo.
+
+## 4. See it
 
 ```bash
 make mock     # fixtures, no backend — fastest loop for widget work
@@ -84,7 +101,7 @@ Mock mode gives every widget realistic, relative-to-now data, so you can verify
 layout, empty states, and formatting without a backend. See
 [Offline Mock Mode](../getting-started/mock-mode.md).
 
-## 4. Ship it
+## 5. Ship it
 
 Run the gate and open a PR:
 

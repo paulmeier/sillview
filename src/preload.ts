@@ -19,6 +19,7 @@ import type {
   SillviewApi,
 } from './shared/ipc';
 import type { KasasEvent } from './shared/kasas-types';
+import type { InstalledWidget, WidgetRegistryResult } from './shared/widget-registry';
 
 const api: SillviewApi = {
   kasas: {
@@ -54,6 +55,21 @@ const api: SillviewApi = {
       const handler = () => cb();
       ipcRenderer.on(IpcChannels.dashboardsChanged, handler);
       return () => ipcRenderer.removeListener(IpcChannels.dashboardsChanged, handler);
+    },
+  },
+  widgets: {
+    registry: (force?: boolean) =>
+      ipcRenderer.invoke(IpcChannels.widgetsRegistry, force) as Promise<WidgetRegistryResult>,
+    installed: () =>
+      ipcRenderer.invoke(IpcChannels.widgetsInstalled) as Promise<InstalledWidget[]>,
+    install: (slug: string) =>
+      ipcRenderer.invoke(IpcChannels.widgetsInstall, slug) as Promise<InstalledWidget[]>,
+    uninstall: (slug: string) =>
+      ipcRenderer.invoke(IpcChannels.widgetsUninstall, slug) as Promise<InstalledWidget[]>,
+    onChange: (cb: () => void) => {
+      const handler = () => cb();
+      ipcRenderer.on(IpcChannels.widgetsChanged, handler);
+      return () => ipcRenderer.removeListener(IpcChannels.widgetsChanged, handler);
     },
   },
   system: {

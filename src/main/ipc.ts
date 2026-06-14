@@ -16,6 +16,9 @@ import { MOCK, mockKasasRequest } from './kasas/mock';
 import { EventStream } from './kasas/sse';
 import { loadConnection, saveConnection } from './storage/settings';
 import { loadDashboards, saveDashboards, watchDashboards } from './storage/dashboards';
+import { loadInstalled, saveInstalled, watchInstalled } from './storage/installed-widgets';
+import { fetchRegistry } from './widgets/registry-client';
+import { installedFromRegistry, type InstalledWidget } from '../shared/widget-registry';
 import { KasasManager } from './kasas/manager';
 import { kasasDataDir } from './kasas/paths';
 
@@ -42,6 +45,31 @@ async function syncConnection(): Promise<void> {
 
 export function getManager(): KasasManager {
   return manager;
+}
+
+/** Install a widget by slug: look it up in the registry, record it locally. */
+async function installWidget(slug: string): Promise<InstalledWidget[]> {
+  const reg = await fetchRegistry();
+  if (!reg.ok || !reg.index) {
+    throw new Error(reg.error ? `Could not reach the widget registry: ${reg.error}` : 'registry unavailable');
+  }
+  const entry = reg.index.widgets.find((w) => w.name === slug);
+  if (!entry) throw new Error(`Widget "${slug}" is not in the registry.`);
+  const current = await loadInstalled();
+  const next = [
+    ...current.filter((w) => w.slug !== slug),
+    installedFromRegistry(entry, new Date().toISOString()),
+  ];
+  await saveInstalled(next);
+  return next;
+}
+
+/** Uninstall a widget by slug. Existing dashboard tiles degrade to a "not installed" card. */
+async function uninstallWidget(slug: string): Promise<InstalledWidget[]> {
+  const current = await loadInstalled();
+  const next = current.filter((w) => w.slug !== slug);
+  await saveInstalled(next);
+  return next;
 }
 
 export async function registerIpc(): Promise<void> {
@@ -88,6 +116,14 @@ export async function registerIpc(): Promise<void> {
   // Pick up dashboards.json written by an external editor (the MCP server) and
   // tell the renderer to reload. The app's own saves are filtered out.
   watchDashboards(() => broadcast(IpcChannels.dashboardsChanged, undefined));
+
+  // --- widget marketplace ------------------------------------------------
+  ipcMain.handle(IpcChannels.widgetsRegistry, (_e, force?: boolean) => fetchRegistry(!!force));
+  ipcMain.handle(IpcChannels.widgetsInstalled, () => loadInstalled());
+  ipcMain.handle(IpcChannels.widgetsInstall, (_e, slug: string) => installWidget(slug));
+  ipcMain.handle(IpcChannels.widgetsUninstall, (_e, slug: string) => uninstallWidget(slug));
+  // External install/uninstall (the MCP server) → tell the renderer to reload.
+  watchInstalled(() => broadcast(IpcChannels.widgetsChanged, undefined));
 
   // --- managed kasas backend --------------------------------------------
   ipcMain.handle(IpcChannels.backendGetSettings, () => manager.settings);
