@@ -26,6 +26,10 @@
     "email": "longish.physic0h@icloud.com"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/paulmeier/sillview.git"
+  },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.2",
     "@electron-forge/maker-deb": "^7.11.2",
@@ -71,6 +75,7 @@
     "tailwind-merge": "^3.6.0",
     "tailwind-variants": "^3.2.2",
     "tailwindcss": "^4.3.0",
+    "update-electron-app": "^3.2.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   }
