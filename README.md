@@ -53,6 +53,25 @@ Download the latest installer for your platform from the
 >
 > Signing + notarization are planned; until then these one-time steps are expected.
 
+### Auto-update
+
+Once installed, Sillview keeps itself up to date — no need to revisit the
+Releases page or drag a new build into `/Applications`. On macOS and Windows the
+app checks for new releases in the background (on launch, then hourly) via
+Electron's built-in updater and the free [update.electronjs.org] service, which
+serves our published GitHub Releases. When a newer version finishes downloading,
+you'll get a native **Restart to update** prompt; click it and the app relaunches
+on the new version.
+
+- **Linux** (`.deb`/`.rpm`) updates through your system package manager, not the
+  in-app updater.
+- **macOS** auto-update requires a **code-signed** app. Because release builds are
+  currently unsigned (see the heads-up above), the macOS updater checks but can't
+  apply updates yet — it starts working automatically once signing is enabled.
+  Windows auto-update works today.
+
+[update.electronjs.org]: https://github.com/electron/update.electronjs.org
+
 ## Features
 
 - **Custom dashboards** — start from a clean slate, then arrange widgets on a

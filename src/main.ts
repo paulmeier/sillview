@@ -3,6 +3,7 @@ import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpc, startBackend, stopBackend } from './main/ipc';
 import { MOCK } from './main/kasas/mock';
+import { initAppUpdater } from './main/updater';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -88,6 +89,8 @@ app.on('ready', async () => {
   });
 
   setDevDockIcon();
+  // Background self-update of the app itself (no-op in dev / on Linux).
+  initAppUpdater();
   await registerIpc();
   createWindow();
   // KASAS_MOCK serves fixtures from the main process; don't spawn the real binary.
