@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1](https://github.com/paulmeier/sillview/compare/v0.13.0...v0.13.1) (2026-06-16)
+
+
+### Documentation
+
+* add a mock-data demo GIF to the README ([edd9c92](https://github.com/paulmeier/sillview/commit/edd9c923f5dc4de8a1daae732fb716aee0d37ca6))
+
 ## [0.13.0](https://github.com/paulmeier/sillview/compare/v0.12.0...v0.13.0) (2026-06-15)
 
 

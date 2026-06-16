@@ -1,7 +1,7 @@
 {
   "name": "sillview",
   "productName": "Sillview",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Desktop dashboard front-end for the kasas ledger backend",
   "main": ".vite/build/main.js",
   "private": true,
