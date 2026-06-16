@@ -31,6 +31,14 @@ can keep it running in the background.
 Built with **Electron Forge + Vite + React 19 + TypeScript**, styled with
 **Tailwind CSS v4**, and visualized with **Tremor**-style charts (Recharts).
 
+<p align="center">
+  <img src=".github/assets/demo.gif" alt="A guided tour of Sillview running entirely on mock data — the Investments dashboard, the Configure dialog, the widget marketplace and install-gating, building a dashboard from scratch, and the Transactions, Search, Accounts, Events, Sources, Rules, Webhooks, and plugin surfaces" width="900">
+</p>
+
+<p align="center">
+  <em>A guided tour on <strong>mock data</strong> (no backend, no network, no real data) — the dashboard grid, the widget marketplace, and every ledger surface.</em>
+</p>
+
 ## Install
 
 Download the latest installer for your platform from the
