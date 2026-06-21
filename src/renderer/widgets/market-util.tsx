@@ -25,6 +25,19 @@ export function growthOf(values: number[], amount = 10_000): number[] {
   return values.map((v) => (amount * v) / base);
 }
 
+/**
+ * A price/value formatter bound to a series' currency: `$1,234.56` for USD,
+ * otherwise `1,234.56 CODE`. Used for both the y-axis ticks and the tooltip, so
+ * it stays compact (no forced cents) while still distinguishing magnitudes.
+ */
+export function priceFormatter(currency: string): (v: number) => string {
+  const usd = currency === 'USD';
+  return (v: number) => {
+    const n = v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return usd ? `$${n}` : `${n} ${currency}`;
+  };
+}
+
 /** Percentage change from the first to the last positive value, e.g. "+8.3%". */
 export function pctChange(values: number[]): string {
   const first = values.find((v) => v > 0);

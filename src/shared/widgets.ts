@@ -181,6 +181,34 @@ export const WIDGET_META: WidgetMeta[] = [
       },
     ],
   },
+  {
+    type: 'market-overlay',
+    title: 'Price Overlay',
+    description:
+      'Raw spot prices of one or more market series on a shared axis (e.g. Gold/Silver/Platinum), with optional SMA/EMA moving-average lines overlaid on the first series.',
+    category: 'Market',
+    defaultSize: { w: 6, h: 5, minW: 4, minH: 3 },
+    configSpec: [
+      {
+        key: 'series',
+        types: ['string', 'string[]'],
+        description:
+          'One market series id, or an array of ids to overlay as raw prices (e.g. ["gold","silver","platinum"]). See the list_market_series tool.',
+      },
+      {
+        key: 'sma',
+        types: ['number', 'string'],
+        description:
+          'Simple moving-average period (e.g. 50) overlaid on the first series, computed in-app. Omit for none.',
+      },
+      {
+        key: 'ema',
+        types: ['number', 'string'],
+        description:
+          'Exponential moving-average period (e.g. 20) overlaid on the first series, computed in-app. Omit for none.',
+      },
+    ],
+  },
 ];
 
 export const widgetMetaByType: Record<string, WidgetMeta> = Object.fromEntries(
