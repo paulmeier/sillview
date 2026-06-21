@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0](https://github.com/paulmeier/sillview/compare/v0.13.1...v0.14.0) (2026-06-21)
+
+
+### Features
+
+* add Price Overlay widget (raw spot prices + SMA/EMA) ([39d75a3](https://github.com/paulmeier/sillview/commit/39d75a3de6aa95eeea7d2b95fc953b82d50ecff5))
+
 ## [0.13.1](https://github.com/paulmeier/sillview/compare/v0.13.0...v0.13.1) (2026-06-16)
 
 
