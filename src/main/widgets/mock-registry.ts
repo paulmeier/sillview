@@ -30,6 +30,7 @@ export const ICON_BY_TYPE: Record<string, string> = {
   'activity-feed': 'activity',
   'benchmark-comparison': 'scales',
   'market-series': 'line-chart',
+  'market-overlay': 'line-chart',
 };
 
 /** Search tags per widget type. */
@@ -44,6 +45,7 @@ export const TAGS_BY_TYPE: Record<string, string[]> = {
   'activity-feed': ['activity', 'live', 'events'],
   'benchmark-comparison': ['market', 'benchmark', 'comparison', 'chart'],
   'market-series': ['market', 'series', 'chart'],
+  'market-overlay': ['market', 'price', 'sma', 'ema', 'gold', 'silver', 'chart'],
 };
 
 /** Build the offline registry index from the compiled widget catalog. */

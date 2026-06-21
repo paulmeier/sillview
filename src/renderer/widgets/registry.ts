@@ -11,6 +11,7 @@ import {
   RiBankLine,
   RiBarChart2Line,
   RiExchangeFundsLine,
+  RiCandleLine,
   RiLineChartLine,
   RiListCheck,
   RiPieChart2Line,
@@ -31,6 +32,7 @@ import { ActivityFeedWidget } from './ActivityFeed';
 import { SyncStatusWidget } from './SyncStatus';
 import { BenchmarkComparisonWidget } from './BenchmarkComparison';
 import { MarketSeriesChartWidget } from './MarketSeriesChart';
+import { MarketOverlayChartWidget } from './MarketOverlayChart';
 
 /** Icon per widget type, keyed to the shared metadata. */
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
@@ -44,6 +46,7 @@ const ICONS: Record<string, ComponentType<{ className?: string }>> = {
   'activity-feed': RiPulseLine,
   'benchmark-comparison': RiScales3Line,
   'market-series': RiLineChartLine,
+  'market-overlay': RiCandleLine,
 };
 
 /** React component per widget type, keyed to the shared metadata. */
@@ -58,6 +61,7 @@ const COMPONENTS: Record<string, ComponentType<WidgetProps>> = {
   'activity-feed': ActivityFeedWidget,
   'benchmark-comparison': BenchmarkComparisonWidget,
   'market-series': MarketSeriesChartWidget,
+  'market-overlay': MarketOverlayChartWidget,
 };
 
 // Metadata lives in src/shared/widgets.ts (so the MCP server can read it without

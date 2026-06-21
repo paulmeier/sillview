@@ -661,12 +661,20 @@ interface MockSeries {
 const marketSeries: MockSeries[] = [
   { id: 'spy', symbol: 'SPY', kind: 'index', currency: 'USD', adjusted: false, name: 'S&P 500 ETF (SPY)' },
   { id: 'agg', symbol: 'AGG', kind: 'index', currency: 'USD', adjusted: false, name: 'US Aggregate Bond ETF' },
+  // Precious-metal ETF proxies — Alpha Vantage has no raw spot feed, so these
+  // stand in for gold/silver/platinum spot prices in the Price Overlay widget.
+  { id: 'gold', symbol: 'GLD', kind: 'equity', currency: 'USD', adjusted: false, name: 'Gold (GLD)' },
+  { id: 'silver', symbol: 'SLV', kind: 'equity', currency: 'USD', adjusted: false, name: 'Silver (SLV)' },
+  // PLTM (not PPLT): the latter did a 10:1 split, which a raw/unadjusted feed
+  // renders as a misleading price cliff. PLTM tracks platinum without one.
+  { id: 'platinum', symbol: 'PLTM', kind: 'equity', currency: 'USD', adjusted: false, name: 'Platinum (PLTM)' },
 ];
 const marketConfigured = true; // mock has a "key" so widgets show data offline
 
 const isoDate = (ms: number): string => new Date(ms).toISOString().slice(0, 10);
 const seedFor = (id: string): number => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
-const startValue = (id: string): number => ({ spy: 480, agg: 98 } as Record<string, number>)[id] ?? 100;
+const startValue = (id: string): number =>
+  ({ spy: 480, agg: 98, gold: 305, silver: 30, platinum: 20 } as Record<string, number>)[id] ?? 100;
 
 /** ~180 deterministic daily closes ending today, with a gentle upward drift. */
 function marketPointsFor(id: string): { date: string; value: string }[] {
@@ -696,16 +704,32 @@ function marketSeriesList() {
 }
 
 // --- Saved-dashboards fixture -----------------------------------------------
-// A seeded "Investments" board for mock mode that exercises the Market Data
-// source: a SPY-vs-AGG "growth of $10k" comparison chart next to a SPY benchmark
-// against the Brokerage account. Returned by loadDashboards()
-// on first run under KASAS_MOCK, in the same serialized shape the renderer's
-// persist store writes (see src/renderer/store/dashboards.ts), so it hydrates
-// and is then user-editable — saving overwrites the fixture with a real file.
+// Two seeded boards for mock mode that exercise the Market Data source:
+//   - "Markets": a Gold/Silver/Platinum raw-spot-price comparison next to an
+//     S&P 500 (SPY) chart with in-app SMA(50) + EMA(20) overlays (Price Overlay
+//     widget).
+//   - "Investments": a SPY-vs-AGG "growth of $10k" comparison next to a SPY
+//     benchmark against the Brokerage account.
+// Returned by loadDashboards() on first run under KASAS_MOCK, in the same
+// serialized shape the renderer's persist store writes (see
+// src/renderer/store/dashboards.ts), so it hydrates and is then user-editable —
+// saving overwrites the fixture with a real file.
 
-/** Serialized saved-dashboards store seeding the mock "Investments" board. */
+/** Serialized saved-dashboards store seeding the mock "Markets" + "Investments" boards. */
 export function mockDashboardsFile(): string {
-  const dashboard: Dashboard = {
+  const markets: Dashboard = {
+    id: 'dash_markets',
+    name: 'Markets',
+    widgets: [
+      { id: 'mw_metals', type: 'market-overlay', config: { series: ['gold', 'silver', 'platinum'] } },
+      { id: 'mw_sp500_ma', type: 'market-overlay', config: { series: 'spy', sma: 50, ema: 20 } },
+    ],
+    layout: [
+      { i: 'mw_metals', x: 0, y: 0, w: 7, h: 6, minW: 4, minH: 3 },
+      { i: 'mw_sp500_ma', x: 7, y: 0, w: 5, h: 6, minW: 4, minH: 3 },
+    ],
+  };
+  const investments: Dashboard = {
     id: 'dash_investments',
     name: 'Investments',
     widgets: [
@@ -721,7 +745,7 @@ export function mockDashboardsFile(): string {
       { i: 'mw_spy_vs_brokerage', x: 7, y: 0, w: 5, h: 6, minW: 4, minH: 4 },
     ],
   };
-  return serializeDashboardsFile([dashboard], dashboard.id);
+  return serializeDashboardsFile([markets, investments], markets.id);
 }
 
 function route(req: KasasRequest): KasasResult {
